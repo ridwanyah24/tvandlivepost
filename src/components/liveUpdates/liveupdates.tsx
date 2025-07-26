@@ -104,7 +104,7 @@ const LiveUpdates = () => {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Events Sidebar */}
           <div className="lg:col-span-1">
-            <h2 className="text-2xl font-bold text-foreground mb-6 flex items-center text-red-300">
+            <h2 className="text-2xl font-bold text-foreground mb-6 flex items-center">
               <RadioIcon className="w-6 h-6 mr-2 text-accent" />
               Live Events
             </h2>

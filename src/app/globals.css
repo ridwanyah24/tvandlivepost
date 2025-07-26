@@ -1,29 +1,42 @@
-/* globals.css (for Next.js + Tailwind) */
-
 @import "tailwindcss";
-@import "tailindcss/postcss";
+/* @import "tailindcss/postcss";
 @import "tailwindcss/preflight";
-/* @import '@tailwindutilities'; */
+@import '@tailwindutilities'; */
 
-/* @tailwind base;
-@tailwind components;
-@tailwind utilities; */
-
-
-/* @tailwind base;
-@tailwind components;
-@tailwind utilities; */
-
-/* Custom Design System - All colors, gradients, fonts, etc should be defined here. Use HSL. */
-
-body{
-  background-color: red;
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
 }
 
-@layer base {
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
   :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+/* body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+} */
+
+
+@layer base {
+
+  :root {
+    /* Custom theme colors based on project requirements */
     --background: 0 0% 7%;
+    /* Dark background */
     --foreground: 0 0% 95%;
+    /* Light text */
 
     --card: 0 0% 10%;
     --card-foreground: 0 0% 95%;
@@ -31,19 +44,26 @@ body{
     --popover: 0 0% 8%;
     --popover-foreground: 0 0% 95%;
 
+    /* Primary: Matte Black */
     --primary: 0 0% 0%;
     --primary-foreground: 0 0% 98%;
 
+    /* Accent: Red accent color */
     --secondary: 8 87% 30%;
+    /* #981E0B converted to HSL */
     --secondary-foreground: 0 0% 98%;
 
     --muted: 0 0% 15%;
     --muted-foreground: 0 0% 65%;
 
+    /* Accent colors for the platform */
     --accent: 8 87% 30%;
+    /* Red accent #981E0B */
     --accent-foreground: 0 0% 98%;
 
+    /* Optional accent: Dark Olive */
     --olive: 81 26% 21%;
+    /* #3B5323 converted to HSL */
     --olive-foreground: 0 0% 98%;
 
     --destructive: 0 84% 60%;
@@ -56,12 +76,19 @@ body{
     --radius: 0.5rem;
 
     --sidebar-background: 0 0% 98%;
+
     --sidebar-foreground: 240 5.3% 26.1%;
+
     --sidebar-primary: 240 5.9% 10%;
+
     --sidebar-primary-foreground: 0 0% 98%;
+
     --sidebar-accent: 240 4.8% 95.9%;
+
     --sidebar-accent-foreground: 240 5.9% 10%;
+
     --sidebar-border: 220 13% 91%;
+
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
@@ -93,7 +120,6 @@ body{
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 212.7 26.8% 83.9%;
-
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
@@ -103,23 +129,32 @@ body{
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
-/* 
-  * {
-    @apply border-border;
-  }
 
-  body {
+  /* * {
+    @apply border-border;
+  } */
+
+  /* body {
     @apply bg-background text-foreground;
   } */
 }
 
-/* Misc styles */
+
+
 #root {
   max-width: 1280px;
   margin: 0 auto;
   padding: 2rem;
   text-align: center;
 }
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+
 
 .logo {
   height: 6em;
@@ -158,4 +193,8 @@ body{
 
 .read-the-docs {
   color: #888;
+}
+
+@layer base {
+  
 }
