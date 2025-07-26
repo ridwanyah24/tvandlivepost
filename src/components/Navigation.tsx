@@ -1,11 +1,14 @@
+'use client';
+
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { RadioIcon, TvIcon, SettingsIcon, MenuIcon, XIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const Navigation = () => {
-  const location = useLocation();
+  const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const navItems = [
@@ -21,7 +24,7 @@ const Navigation = () => {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center space-x-2">
+          <Link href="/" className="flex items-center space-x-2">
             <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center">
               <RadioIcon className="w-5 h-5 text-accent-foreground" />
             </div>
@@ -32,10 +35,10 @@ const Navigation = () => {
           <div className="hidden md:flex items-center space-x-1">
             {navItems.map((item) => {
               const Icon = item.icon;
-              const isActive = location.pathname === item.path;
-              
+              const isActive = pathname === item.path;
+
               return (
-                <Link key={item.path} to={item.path}>
+                <Link key={item.path} href={item.path}>
                   <Button
                     variant={isActive ? "secondary" : "ghost"}
                     className={cn(
@@ -72,10 +75,10 @@ const Navigation = () => {
             <div className="flex flex-col space-y-2">
               {navItems.map((item) => {
                 const Icon = item.icon;
-                const isActive = location.pathname === item.path;
-                
+                const isActive = pathname === item.path;
+
                 return (
-                  <Link key={item.path} to={item.path} onClick={toggleMobileMenu}>
+                  <Link key={item.path} href={item.path} onClick={toggleMobileMenu}>
                     <Button
                       variant={isActive ? "secondary" : "ghost"}
                       className={cn(
