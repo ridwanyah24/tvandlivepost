@@ -12,6 +12,10 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 
 export const Providers = ({ children }: { children: React.ReactNode }) => {
   const storeRef = useRef(store);
+    if (!storeRef.current) {
+    // Create the store instance the first time this renders
+    storeRef.current = store;
+  }
 
   return (
     <Provider store={storeRef.current}>
@@ -63,10 +67,10 @@ export const Providers = ({ children }: { children: React.ReactNode }) => {
 //   const storeRef = useRef<any>(null);
 //   const persistRef = useRef(persistor); // Assign store to storeRef
 //   // Assign store to storeRef
-//   if (!storeRef.current) {
-//     // Create the store instance the first time this renders
-//     storeRef.current = store;
-//   }
+  // if (!storeRef.current) {
+  //   // Create the store instance the first time this renders
+  //   storeRef.current = store;
+  // }
 //   return (
 //     <Provider store={storeRef.current}>
 //       <PersistGate loading={null} persistor={persistor}>
