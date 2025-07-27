@@ -36,7 +36,7 @@ const LiveUpdateCard = ({ update, onLike, onComment }: LiveUpdateCardProps) => {
   };
 
   return (
-    <Card className="mb-4 hover:bg-muted/50 transition-colors duration-200 border-border">
+    <Card className="mb-4 hover:bg-muted/50 transition-colors duration-200 border-(--border)">
       <CardContent className="p-6">
         <div className="flex items-start justify-between mb-3">
           <h3 className="text-lg font-semibold text-foreground">{update.title}</h3>

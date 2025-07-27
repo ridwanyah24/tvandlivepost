@@ -34,7 +34,7 @@ export default function RootLayout({
         <Providers>
           <Navigation />
           {children}
-          </Providers>
+        </Providers>
       </body>
     </html>
   );

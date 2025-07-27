@@ -115,7 +115,7 @@ const LiveUpdates = () => {
                   key={event.id}
                   className={`cursor-pointer transition-all duration-200 hover:shadow-lg ${
                     selectedEvent.id === event.id 
-                      ? "border-accent shadow-lg" 
+                      ? "border-(--accent) shadow-lg" 
                       : "border-border"
                   }`}
                   onClick={() => setSelectedEvent(event)}
