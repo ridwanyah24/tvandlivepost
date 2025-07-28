@@ -1,5 +1,5 @@
 'use client'
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,38 +7,122 @@ import { Textarea } from "@/components/ui/text-area";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  SettingsIcon, 
-  PlusIcon, 
-  EyeIcon, 
-  HeartIcon, 
+import {
+  SettingsIcon,
+  PlusIcon,
+  EyeIcon,
+  HeartIcon,
   MessageCircleIcon,
   TvIcon,
   RadioIcon,
-  StopCircleIcon 
+  StopCircleIcon
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useGenericMutationMutation } from "@/slice/requestSlice";
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useAppSelector } from "@/hooks/redux-hooks";
+import { selectCurrentAdmin, selectCurrentAdminAccess } from "@/slice/authAdmin";
+import { useRouter } from "next/navigation";
+
+
+
+export const createEventSchema = z.object({
+  title: z.string().min(1, "Event title is required"),
+  description: z.string().optional()
+});
+
+const updateSchema = z.object({
+  update: z.object({
+    title: z.string().min(2, { message: "Title must be at least 2 characters" }),
+    details: z.string(),
+  }),
+  image_file: z
+    .custom<File | undefined>((file) => file === undefined || file instanceof File, {
+      message: "I am the trouble",
+    }).optional()
+    .refine((file) => file === undefined || file.size > 0, {
+      message: "Image file is required",
+    })
+    .refine((file) => file === undefined || file.type.startsWith("image/"), {
+      message: "Only image files are allowed",
+    }),
+});
+
+export const uploadVideoSchema = z.object({
+  title: z.string().min(1, "Title is required"),
+  thumbnail: z
+    .instanceof(File)
+    .refine((file) => file.size > 0, { message: "Thumbnail is required" })
+    .refine((file) => file.type.startsWith("image/"), {
+      message: "Thumbnail must be an image file",
+    }),
+  video_file: z
+    .instanceof(File)
+    .refine((file) => file.size > 0, { message: "Video file is required" })
+    .refine((file) => file.type.startsWith("video/"), {
+      message: "Only video files are allowed",
+    }),
+});
+
 
 const Admin = () => {
   const { toast } = useToast();
+  const [createEvent, { isLoading, isError, isSuccess }] = useGenericMutationMutation();
+  const [postUpdate, { isLoading: loading, isError: error, isSuccess: success }] = useGenericMutationMutation();
+  const [eventId, setEventId] = useState("");
+  const [uploadVideoMutation, { isLoading: loadingVideo, isError: errorVideo, isSuccess: successVideo }] = useGenericMutationMutation()
+  const  accessToken  = useAppSelector(selectCurrentAdminAccess);
+  console.log(accessToken);
   
-  // Form states
-  const [eventForm, setEventForm] = useState({
-    title: "",
-    description: ""
+  const router = useRouter();
+
+  // 🔐 Protect route
+  useEffect(() => {
+    if (!accessToken) {
+      toast({
+        variant: "destructive",
+        title: "Access Denied",
+        description: "You must be logged in to access the admin page.",
+      });
+
+      router.push("/auth"); // Redirect to login page
+    }
+  }, [accessToken, router, toast]);
+
+  // You can optionally return null or a spinner until redirect completes
+  if (!accessToken) return null;
+  
+  const {
+    register: registerEvent,
+    handleSubmit: handleSubmitEvent,
+    reset: resetEventForm,
+    formState: { errors: eventErrors },
+  } = useForm({
+    resolver: zodResolver(createEventSchema),
   });
-  
-  const [updateForm, setUpdateForm] = useState({
-    eventId: "",
-    title: "",
-    details: "",
-    image: null as File | null
+
+  const {
+    register: registerUpdate,
+    handleSubmit: handleSubmitUpdate,
+    reset: resetUpdate,
+    setValue,
+    watch,
+    formState: { errors: updateErrors },
+  } = useForm<z.infer<typeof updateSchema>>({
+    resolver: zodResolver(updateSchema),
   });
-  
-  const [videoForm, setVideoForm] = useState({
-    title: "",
-    videoFile: null as File | null,
-    thumbnail: null as File | null
+
+  const {
+    register: registerVideo,
+    handleSubmit: handleSubmitVideo,
+    reset: resetVideo,
+    setValue: setValueVideo,
+    watch: watchVideo,
+    formState: { errors: videoErrors },
+  } = useForm({
+    resolver: zodResolver(uploadVideoSchema),
   });
 
   // Mock data
@@ -53,7 +137,7 @@ const Admin = () => {
     {
       id: "2",
       title: "Product Launch Event",
-      status: "live", 
+      status: "live",
       updates: 8,
       viewers: 892
     }
@@ -97,58 +181,89 @@ const Admin = () => {
     }
   ];
 
-  const handleCreateEvent = () => {
-    if (!eventForm.title.trim()) {
-      toast({
-        title: "Error",
-        description: "Event title is required",
-        variant: "destructive"
+  const handleCreateEvent = (data: z.infer<typeof createEventSchema>) => {
+    console.log(data);
+    createEvent({
+      url: '/admin/events',
+      method: "POST",
+      body: data,
+    })
+      .unwrap()
+      .then(() => {
+        toast({
+          title: "Success",
+          description: "Event created successfully!",
+        });
+      })
+      .catch((error) => {
+        toast({
+          title: "Error",
+          description: error?.data?.message || "Failed to create event.",
+          variant: "destructive",
+        });
       });
-      return;
-    }
-
-    toast({
-      title: "Success",
-      description: "Event created successfully!"
-    });
-    
-    setEventForm({ title: "", description: "" });
+    resetEventForm();
   };
 
-  const handleCreateUpdate = () => {
-    if (!updateForm.eventId || !updateForm.title.trim() || !updateForm.details.trim()) {
-      toast({
-        title: "Error", 
-        description: "Event, title and details are required",
-        variant: "destructive"
-      });
-      return;
+  const handleCreateUpdate = (data: z.infer<typeof updateSchema>) => {
+    const formData = new FormData();
+    // Append the update object as a JSON string
+    formData.append("update", JSON.stringify(data.update));
+    // Append the image file
+    if (data.image_file) {
+      formData.append("image_file", data.image_file.name);
+    }
+    // Trigger the mutation with FormData
+    for (const [key, value] of formData.entries()) {
+      console.log(key, value);
     }
 
-    toast({
-      title: "Success",
-      description: "Update posted successfully!"
-    });
-    
-    setUpdateForm({ eventId: "", title: "", details: "", image: null });
-  };
-
-  const handleUploadVideo = () => {
-    if (!videoForm.title.trim()) {
+    postUpdate({
+      url: `/admin/events/${eventId}/updates`,
+      method: "POST",
+      body: formData,
+    }).unwrap().then(() => {
+      toast({
+        title: "Success",
+        description: "Update posted successfully!",
+      });
+    }).catch((error) => {
       toast({
         title: "Error",
-        description: "Video title is required",
-        variant: "destructive"
+        description: error?.data?.message || "Failed to post Update.",
+        variant: "destructive",
       });
-      return;
+    });
+    resetUpdate();
+  };
+
+  const handleUploadVideo = (data: z.infer<typeof uploadVideoSchema>) => {
+    const formData = new FormData();
+    formData.append("title", data.title);
+    formData.append("videoFile", data.video_file.name);
+    if (data.thumbnail) formData.append("thumbnail", data.thumbnail.name);
+
+    for (const [key, value] of formData.entries()) {
+      console.log(key, value);
     }
 
-    toast({
-      title: "Success",
-      description: "Video uploaded successfully!"
+    uploadVideoMutation({
+      url: `/admin/videos`,
+      method: "POST",
+      body: formData,
+    }).unwrap().then(() => {
+      toast({
+        title: "Success",
+        description: "video posted successfully!",
+      });
+    }).catch((error) => {
+      toast({
+        title: "Error",
+        description: error?.data?.message || "Failed to post video.",
+        variant: "destructive",
+      });
     });
-    
-    setVideoForm({ title: "", videoFile: null, thumbnail: null });
+    resetVideo();
   };
 
   const handleEndEvent = (eventId: string) => {
@@ -172,19 +287,19 @@ const Admin = () => {
 
         <Tabs defaultValue="events" className="space-y-6">
           <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="events" className="flex items-center space-x-2">
+            <TabsTrigger value="events" className="flex items-center space-x-2 cursor-pointer">
               <RadioIcon className="w-4 h-4" />
               <span>Events</span>
             </TabsTrigger>
-            <TabsTrigger value="updates" className="flex items-center space-x-2">
+            <TabsTrigger value="updates" className="flex items-center space-x-2 cursor-pointer">
               <PlusIcon className="w-4 h-4" />
               <span>Updates</span>
             </TabsTrigger>
-            <TabsTrigger value="videos" className="flex items-center space-x-2">
+            <TabsTrigger value="videos" className="flex items-center space-x-2 cursor-pointer">
               <TvIcon className="w-4 h-4" />
               <span>Videos</span>
             </TabsTrigger>
-            <TabsTrigger value="analytics" className="flex items-center space-x-2">
+            <TabsTrigger value="analytics" className="flex items-center space-x-2 cursor-pointer">
               <EyeIcon className="w-4 h-4" />
               <span>Analytics</span>
             </TabsTrigger>
@@ -199,28 +314,18 @@ const Admin = () => {
                   <CardTitle>Create New Event</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div>
-                    <Label htmlFor="event-title">Event Title</Label>
-                    <Input
-                      id="event-title"
-                      value={eventForm.title}
-                      onChange={(e) => setEventForm(prev => ({...prev, title: e.target.value}))}
-                      placeholder="Enter event title"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="event-description">Description</Label>
-                    <Textarea
-                      id="event-description"
-                      value={eventForm.description}
-                      onChange={(e: { target: { value: any; }; }) => setEventForm(prev => ({...prev, description: e.target.value}))}
-                      placeholder="Enter event description"
-                      rows={3}
-                    />
-                  </div>
-                  <Button onClick={handleCreateEvent} className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
-                    Create Event
-                  </Button>
+                  <form onSubmit={handleSubmitEvent(handleCreateEvent)} className="space-y-4">
+                    <div>
+                      <Label htmlFor="event-title">Event Title</Label>
+                      <Input id="event-title" {...registerEvent("title")} />
+                      {eventErrors.title && <p className="text-sm text-red-500">{eventErrors.title.message}</p>}
+                    </div>
+                    <div>
+                      <Label htmlFor="event-description">Description</Label>
+                      <Textarea id="event-description" {...registerEvent("description")} />
+                    </div>
+                    <Button type="submit">Create Event</Button>
+                  </form>
                 </CardContent>
               </Card>
 
@@ -270,54 +375,76 @@ const Admin = () => {
                 <CardHeader>
                   <CardTitle>Post Live Update</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Label htmlFor="update-event">Select Event</Label>
-                    <select
-                      id="update-event"
-                      value={updateForm.eventId}
-                      onChange={(e) => setUpdateForm(prev => ({...prev, eventId: e.target.value}))}
-                      className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent"
+                <CardContent >
+                  <form onSubmit={handleSubmitUpdate(handleCreateUpdate)} className="space-y-4">
+                    <div>
+                      <Label htmlFor="eventId">Select Event</Label>
+                      <select
+                        id="eventId"
+                        // {...registerUpdate("eventId", { required: true })}
+                        onChange={(e) => { setEventId(e.target.value) }}
+                        className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent"
+                      >
+                        <option value="">Choose an event...</option>
+                        {activeEvents.map((event) => (
+                          <option key={event.id} value={event.id}>
+                            {event.title}
+                          </option>
+                        ))}
+                      </select>
+                      {eventId === "" && <p className="text-red-500 text-sm">Event is required</p>}
+                    </div>
+
+                    <div>
+                      <Label htmlFor="update.title">Update Title</Label>
+                      <Input
+                        id="update.title"
+                        {...registerUpdate("update.title")}
+                        placeholder="Enter update title"
+                      />
+                      {updateErrors.update?.title && (
+                        <p className="text-red-500 text-sm">{updateErrors.update.title.message}</p>
+                      )}
+                    </div>
+
+                    <div>
+                      <Label htmlFor="update.details">Details</Label>
+                      <Textarea
+                        id="update.details"
+                        {...registerUpdate("update.details")}
+                        placeholder="Enter update details"
+                        rows={4}
+                      />
+                      {updateErrors.update?.details && (
+                        <p className="text-red-500 text-sm">{updateErrors.update.details.message}</p>
+                      )}
+                    </div>
+
+                    <div>
+                      <Label htmlFor="image_file">Image (Optional)</Label>
+                      <Input
+                        id="image_file"
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            setValue("image_file", file, { shouldValidate: true });
+                          }
+                        }}
+                      />
+                      {updateErrors.image_file && (
+                        <p className="text-red-500 text-sm">{updateErrors.image_file.message}</p>
+                      )}
+                    </div>
+                    <Button
+                      type="submit"
+                      className="w-full bg-accent text-accent-foreground hover:bg-accent/90 cursor-pointer"
+                      disabled={loading}
                     >
-                      <option value="">Choose an event...</option>
-                      {activeEvents.map((event) => (
-                        <option key={event.id} value={event.id}>
-                          {event.title}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <Label htmlFor="update-title">Update Title</Label>
-                    <Input
-                      id="update-title"
-                      value={updateForm.title}
-                      onChange={(e) => setUpdateForm(prev => ({...prev, title: e.target.value}))}
-                      placeholder="Enter update title"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="update-details">Details</Label>
-                    <Textarea
-                      id="update-details"
-                      value={updateForm.details}
-                      onChange={(e: { target: { value: any; }; }) => setUpdateForm(prev => ({...prev, details: e.target.value}))}
-                      placeholder="Enter update details"
-                      rows={4}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="update-image">Image (Optional)</Label>
-                    <Input
-                      id="update-image"
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => setUpdateForm(prev => ({...prev, image: e.target.files?.[0] || null}))}
-                    />
-                  </div>
-                  <Button onClick={handleCreateUpdate} className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
-                    Post Update
-                  </Button>
+                      {loading ? "Posting Update" : "Post Update"}
+                    </Button>
+                  </form>
                 </CardContent>
               </Card>
 
@@ -362,36 +489,63 @@ const Admin = () => {
                   <CardTitle>Upload Video</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div>
-                    <Label htmlFor="video-title">Video Title</Label>
-                    <Input
-                      id="video-title"
-                      value={videoForm.title}
-                      onChange={(e) => setVideoForm(prev => ({...prev, title: e.target.value}))}
-                      placeholder="Enter video title"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="video-file">Video File</Label>
-                    <Input
-                      id="video-file"
-                      type="file"
-                      accept="video/*"
-                      onChange={(e) => setVideoForm(prev => ({...prev, videoFile: e.target.files?.[0] || null}))}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="thumbnail-file">Thumbnail</Label>
-                    <Input
-                      id="thumbnail-file"
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => setVideoForm(prev => ({...prev, thumbnail: e.target.files?.[0] || null}))}
-                    />
-                  </div>
-                  <Button onClick={handleUploadVideo} className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
-                    Upload Video
-                  </Button>
+                  <form onSubmit={handleSubmitVideo(handleUploadVideo)} className="space-y-4">
+                    <div>
+                      <Label htmlFor="video-title">Video Title</Label>
+                      <Input
+                        id="video-title"
+                        placeholder="Enter video title"
+                        {...registerVideo("title")}
+                      />
+                      {videoErrors.title && (
+                        <p className="text-red-500 text-sm mt-1">{videoErrors.title.message}</p>
+                      )}
+                    </div>
+
+                    <div>
+                      <Label htmlFor="video-file">Video File</Label>
+                      <Input
+                        id="video-file"
+                        type="file"
+                        accept="video/*"
+                        // {...registerVideo("video_file")}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            setValueVideo("video_file", file, { shouldValidate: true });
+                          }
+                        }}
+                      />
+                      {videoErrors.video_file && (
+                        <p className="text-red-500 text-sm mt-1">{videoErrors.video_file.message}</p>
+                      )}
+                    </div>
+
+                    <div>
+                      <Label htmlFor="thumbnail-file">Thumbnail</Label>
+                      <Input
+                        id="thumbnail-file"
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            setValueVideo("thumbnail", file, { shouldValidate: true });
+                          }
+                        }}
+                      />
+                      {videoErrors.thumbnail && (
+                        <p className="text-red-500 text-sm mt-1">{videoErrors.thumbnail.message}</p>
+                      )}
+                    </div>
+
+                    <Button
+                      type="submit"
+                      className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
+                    >
+                      Upload Video
+                    </Button>
+                  </form>
                 </CardContent>
               </Card>
 

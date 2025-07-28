@@ -17,16 +17,20 @@ const baseQuery = fetchBaseQuery({
     baseUrl,
     prepareHeaders: (headers, { getState }) => {
         const state = getState() as RootState;
-        const newToken = state.authAdmin.accessToken; // Token after login
-        // Use newAuth token if available; otherwise, fall back to tempAuth token
-        const token = newToken;
+
+        // Get the access token from Redux state
+        const token = state.authAdmin?.accessToken;
+
         if (token) {
-            headers.set("authorization", `Bearer ${token}`);
+            headers.set("Authorization", `Bearer ${token}`);
+            console.log("✅ Setting Authorization header:", `Bearer ${token}`);
+        } else {
+            console.warn("⚠️ No token found in authAdmin state");
         }
 
         return headers;
     },
-})
+});
 
 const baseQueryWithReauth: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQueryError> = async (
     args,
@@ -35,50 +39,46 @@ const baseQueryWithReauth: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQue
 ) => {
     let result = await baseQuery(args, api, extraOptions);
 
-    // Check if the response indicates an authentication error
+    // If unauthorized, try to refresh the token
     if (result.error && result.error.status === 401) {
         console.log("Access token expired, attempting refresh...");
 
-    // Attempt to refresh the access token
+        const refresh_token = (api.getState() as RootState).authAdmin.refresh_token;
+
         const refreshResult = await baseQuery(
             {
-                url: "/auth/refresh", // Endpoint to refresh tokens
+                url: `/auth/refresh?refresh_token=${refresh_token}`, // ✅ pass as query param
                 method: "POST",
-                body: {
-                    refresh_token: (api.getState() as RootState).authAdmin.accessToken, // Send the refresh token
-                },
             },
             api,
             extraOptions
         );
 
         if (refreshResult.data) {
-            const { accessToken, user}  = refreshResult.data as {
+            const { accessToken, user, refresh_token } = refreshResult.data as {
                 accessToken: string;
+                refresh_token: string;
                 user: User;
-                // role: string
             };
 
-            // Update the store with the new tokens
             const admin = (api.getState() as RootState).authAdmin.user;
             if (admin) {
-                api.dispatch(logInAdmin({accessToken, user}));
+                api.dispatch(logInAdmin({ accessToken, user, refresh_token }));
             } else {
-                console.error("Admin is null, cannot dispatch loginSuccess");
+                console.error("Admin is null, cannot dispatch logInAdmin");
             }
 
-    //         // Update cookies if you're using them
+            // ✅ Optionally update cookies
             createCookie("accessToken", accessToken);
-            // createCookie("refresh_token", refresh_token);
 
-    //         // Retry the original query with the new token
+            // ✅ Retry the original request with the new access token
             result = await baseQuery(args, api, extraOptions);
         } else {
-            // Refresh token failed, clear cookies and log out
+            // Refresh failed — logout
             console.log("Refresh token expired or invalid, logging out...");
-            clearCookie("access_token");
+            clearCookie("accessToken");
             clearCookie("refresh_token");
-            api.dispatch(logOutAdmin()); // Ensure you import the `logout` action from your authSlice
+            api.dispatch(logOutAdmin());
         }
     }
 
@@ -160,7 +160,7 @@ type MutationArg = {
 export const apiSlice = createApi({
     reducerPath: "api",
     baseQuery: baseQueryWithReauth,
-    tagTypes: ["loggedIn"], 
+    tagTypes: ["loggedIn"],
     endpoints: (builder) => ({
         genericMutation: builder.mutation<
             any,
@@ -173,7 +173,7 @@ export const apiSlice = createApi({
             }),
             invalidatesTags: (_, __, arg) => arg?.invalidatesTags || [],
         }),
-       
+        // getAllEvents: builder.query()
     }),
 });
 
