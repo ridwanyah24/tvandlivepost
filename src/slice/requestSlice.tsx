@@ -8,19 +8,18 @@ import {
 } from "@reduxjs/toolkit/query/react";
 import { createCookie, clearCookie } from "@/utils/cookies";
 import { baseUrl } from "@/utils/baseUrl"
-import { loginSuccess, logout } from "./newAuthSlice";
+import { logInAdmin, logOutAdmin } from "./authAdmin";
 import { buildQueryParams } from "@/utils/buildQueryParams";
+import { AuthState, User } from "@/types/newTypes";
 
 
 const baseQuery = fetchBaseQuery({
     baseUrl,
     prepareHeaders: (headers, { getState }) => {
         const state = getState() as RootState;
-        const newToken = state.newAuth.accessToken; // Token after login
-
+        const newToken = state.authAdmin.accessToken; // Token after login
         // Use newAuth token if available; otherwise, fall back to tempAuth token
         const token = newToken;
-
         if (token) {
             headers.set("authorization", `Bearer ${token}`);
         }
@@ -37,50 +36,51 @@ const baseQueryWithReauth: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQue
     let result = await baseQuery(args, api, extraOptions);
 
     // Check if the response indicates an authentication error
-    // if (result.error && result.error.status === 401) {
-    //     console.log("Access token expired, attempting refresh...");
+    if (result.error && result.error.status === 401) {
+        console.log("Access token expired, attempting refresh...");
 
-    // // Attempt to refresh the access token
-    //     const refreshResult = await baseQuery(
-    //         {
-    //             url: "/auth/refresh", // Endpoint to refresh tokens
-    //             method: "POST",
-    //             body: {
-    //                 refresh_token: (api.getState() as RootState).auth.refreshToken, // Send the refresh token
-    //             },
-    //         },
-    //         api,
-    //         extraOptions
-    //     );
+    // Attempt to refresh the access token
+        const refreshResult = await baseQuery(
+            {
+                url: "/auth/refresh", // Endpoint to refresh tokens
+                method: "POST",
+                body: {
+                    refresh_token: (api.getState() as RootState).authAdmin.accessToken, // Send the refresh token
+                },
+            },
+            api,
+            extraOptions
+        );
 
-    //     if (refreshResult.data) {
-    //         const { accessToken, user } = refreshResult.data as {
-    //             accessToken: string;
-    //             user: {};
-    //         };
+        if (refreshResult.data) {
+            const { accessToken, user}  = refreshResult.data as {
+                accessToken: string;
+                user: User;
+                // role: string
+            };
 
-    //         // Update the store with the new tokens
-    //         const institution = (api.getState() as RootState).newAuth.user;
-    //         if (institution) {
-    //             api.dispatch(loginSuccess({ accessToken, user }));
-    //         } else {
-    //             console.error("Institution is null, cannot dispatch loginSuccess");
-    //         }
+            // Update the store with the new tokens
+            const admin = (api.getState() as RootState).authAdmin.user;
+            if (admin) {
+                api.dispatch(logInAdmin({accessToken, user}));
+            } else {
+                console.error("Admin is null, cannot dispatch loginSuccess");
+            }
 
-    // //         // Update cookies if you're using them
-    //         createCookie("accessToken", accessToken);
-    //         // createCookie("refresh_token", refresh_token);
+    //         // Update cookies if you're using them
+            createCookie("accessToken", accessToken);
+            // createCookie("refresh_token", refresh_token);
 
-    // //         // Retry the original query with the new token
-    //         result = await baseQuery(args, api, extraOptions);
-    //     } else {
-    //         // Refresh token failed, clear cookies and log out
-    //         console.log("Refresh token expired or invalid, logging out...");
-    //         clearCookie("access_token");
-    //         clearCookie("refresh_token");
-    //         api.dispatch(logout()); // Ensure you import the `logout` action from your authSlice
-    //     }
-    // }
+    //         // Retry the original query with the new token
+            result = await baseQuery(args, api, extraOptions);
+        } else {
+            // Refresh token failed, clear cookies and log out
+            console.log("Refresh token expired or invalid, logging out...");
+            clearCookie("access_token");
+            clearCookie("refresh_token");
+            api.dispatch(logOutAdmin()); // Ensure you import the `logout` action from your authSlice
+        }
+    }
 
     return result;
 };
@@ -142,9 +142,7 @@ const baseQueryWithReauth: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQue
 
 // Define the valid tags that can be used for cache invalidation
 
-type ValidTags = "notices" | "exam" | "schoolfee" | "students" | "teachers" | "classfee" | "users" | "user" | "sessions" | "classes" | "banks" | "subjects" | "staff" | "classTeachers" | "classTutors" | "classSubjects" | "staffs" | "classSchedule" | "parents" | "staffAttendance" | "geofencing" | "classAttendance";
-
-
+type ValidTags = "loggedIn"
 
 type MutationArg = {
     /** The URL for the request */
@@ -162,10 +160,7 @@ type MutationArg = {
 export const apiSlice = createApi({
     reducerPath: "api",
     baseQuery: baseQueryWithReauth,
-
-    tagTypes: ["exam", "notices", "students", "teachers", "users", "user", "sessions", "banks", "schoolfee", "classes", "subjects", "classfee", "staff", "staffs", "classTeachers", "classTutors", "classSubjects", "classSchedule", "parents", "staffAttendance", "classAttendance", "geofencing"], // Ensure tagTypes match what's used in invalidatesTags
-
-
+    tagTypes: ["loggedIn"], 
     endpoints: (builder) => ({
         genericMutation: builder.mutation<
             any,
@@ -185,5 +180,4 @@ export const apiSlice = createApi({
 export const {
     usePrefetch,
     useGenericMutationMutation,
-    
 } = apiSlice;

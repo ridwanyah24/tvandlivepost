@@ -3,20 +3,19 @@ import { persistStore, persistReducer } from "redux-persist";
 import storage from "redux-persist/lib/storage";
 import { setupListeners } from "@reduxjs/toolkit/query";
 import { counterSlice } from "@/slice/counterSlice";
-import newAuthReducer from "@/slice/newAuthSlice"
 import { apiSlice } from "@/slice/requestSlice";
-
+import adminAuth from "@/slice/authAdmin"
 
 const reducers = combineReducers({
    counter: counterSlice.reducer,
-   newAuth: newAuthReducer,
+   authAdmin: adminAuth,
     [apiSlice.reducerPath] : apiSlice.reducer,
   });
 
 const persistConfig = {
 key: "root",
 storage,
-whiteList: ["auth", "newAuth"],
+whiteList: ["authAdmin"],
 blacklist: [apiSlice.reducerPath], // Prevent persisting the request slice
 };
   
