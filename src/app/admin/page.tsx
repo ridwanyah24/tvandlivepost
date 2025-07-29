@@ -18,13 +18,14 @@ import {
   StopCircleIcon
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useGenericMutationMutation } from "@/slice/requestSlice";
+import { useGenericMutationMutation, useGetAllEventsQuery, useGetAnalyticsQuery } from "@/slice/requestSlice";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAppSelector } from "@/hooks/redux-hooks";
-import { selectCurrentAdmin, selectCurrentAdminAccess } from "@/slice/authAdmin";
+import { selectCurrentAdminAccess } from "@/slice/authAdmin";
 import { useRouter } from "next/navigation";
+import { types } from "util";
 
 
 
@@ -34,10 +35,8 @@ export const createEventSchema = z.object({
 });
 
 const updateSchema = z.object({
-  update: z.object({
-    title: z.string().min(2, { message: "Title must be at least 2 characters" }),
-    details: z.string(),
-  }),
+  title: z.string().min(2, { message: "Title must be at least 2 characters" }),
+  details: z.string(),
   image_file: z
     .custom<File | undefined>((file) => file === undefined || file instanceof File, {
       message: "I am the trouble",
@@ -48,6 +47,7 @@ const updateSchema = z.object({
     .refine((file) => file === undefined || file.type.startsWith("image/"), {
       message: "Only image files are allowed",
     }),
+
 });
 
 export const uploadVideoSchema = z.object({
@@ -72,10 +72,20 @@ const Admin = () => {
   const [createEvent, { isLoading, isError, isSuccess }] = useGenericMutationMutation();
   const [postUpdate, { isLoading: loading, isError: error, isSuccess: success }] = useGenericMutationMutation();
   const [eventId, setEventId] = useState("");
-  const [uploadVideoMutation, { isLoading: loadingVideo, isError: errorVideo, isSuccess: successVideo }] = useGenericMutationMutation()
-  const  accessToken  = useAppSelector(selectCurrentAdminAccess);
+  const [uploadVideoMutation, { isLoading: loadingVideo, isError: errorVideo, isSuccess: successVideo }] = useGenericMutationMutation();
+
+
+  const [endEvent, { isLoading: endingEvent, isError: errorEVent }] = useGenericMutationMutation();
+
+  const { data: activeEvents, isLoading: loadingEvents, isError: eventsError } = useGetAllEventsQuery();
+  const {data:analytics, isLoading:loadingAnalytics, isError: errorAnalytics} = useGetAnalyticsQuery();
+
+  console.log(analytics);
+
+
+  const accessToken = useAppSelector(selectCurrentAdminAccess);
   console.log(accessToken);
-  
+
   const router = useRouter();
 
   // 🔐 Protect route
@@ -93,7 +103,7 @@ const Admin = () => {
 
   // You can optionally return null or a spinner until redirect completes
   if (!accessToken) return null;
-  
+
   const {
     register: registerEvent,
     handleSubmit: handleSubmitEvent,
@@ -126,22 +136,7 @@ const Admin = () => {
   });
 
   // Mock data
-  const activeEvents = [
-    {
-      id: "1",
-      title: "Tech Conference 2024",
-      status: "live",
-      updates: 12,
-      viewers: 1247
-    },
-    {
-      id: "2",
-      title: "Product Launch Event",
-      status: "live",
-      updates: 8,
-      viewers: 892
-    }
-  ];
+
 
   const recentUpdates = [
     {
@@ -187,6 +182,7 @@ const Admin = () => {
       url: '/admin/events',
       method: "POST",
       body: data,
+      invalidatesTags: [{ type: "events" }]
     })
       .unwrap()
       .then(() => {
@@ -208,10 +204,12 @@ const Admin = () => {
   const handleCreateUpdate = (data: z.infer<typeof updateSchema>) => {
     const formData = new FormData();
     // Append the update object as a JSON string
-    formData.append("update", JSON.stringify(data.update));
+    formData.append("title", JSON.stringify(data.title));
+    formData.append("details", JSON.stringify(data.details));
+
     // Append the image file
     if (data.image_file) {
-      formData.append("image_file", data.image_file.name);
+      formData.append("image_file", data.image_file);
     }
     // Trigger the mutation with FormData
     for (const [key, value] of formData.entries()) {
@@ -267,9 +265,21 @@ const Admin = () => {
   };
 
   const handleEndEvent = (eventId: string) => {
-    toast({
-      title: "Event Ended",
-      description: "Event has been marked as ended and removed from live feed"
+    endEvent({
+      url: `/admin/events/${eventId}`,
+      method: "DELETE",
+      invalidatesTags: [{ type: "events" }]
+    }).unwrap().then(() => {
+      toast({
+        title: "Success",
+        description: "video posted successfully!",
+      });
+    }).catch((error) => {
+      toast({
+        title: "Error",
+        description: error?.data?.message || "Failed to post video.",
+        variant: "destructive",
+      });
     });
   };
 
@@ -324,7 +334,7 @@ const Admin = () => {
                       <Label htmlFor="event-description">Description</Label>
                       <Textarea id="event-description" {...registerEvent("description")} />
                     </div>
-                    <Button type="submit">Create Event</Button>
+                    <Button type="submit" className="cursor-pointer hover:bg-accent" disabled={isLoading}>Create Event</Button>
                   </form>
                 </CardContent>
               </Card>
@@ -336,13 +346,12 @@ const Admin = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {activeEvents.map((event) => (
+                    {activeEvents?.map((event: any) => (
                       <div key={event.id} className="flex items-center justify-between p-4 border border-border rounded-lg">
                         <div>
                           <h3 className="font-semibold text-foreground">{event.title}</h3>
                           <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-                            <span>{event.updates} updates</span>
-                            <span>{event.viewers} viewers</span>
+                            <span>{event?.updates?.length} updates</span>
                           </div>
                         </div>
                         <div className="flex items-center space-x-2">
@@ -353,10 +362,10 @@ const Admin = () => {
                             variant="outline"
                             size="sm"
                             onClick={() => handleEndEvent(event.id)}
-                            className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                            className={`border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground cursor-pointer `} disabled={endingEvent}
                           >
                             <StopCircleIcon className="w-4 h-4 mr-1" />
-                            End
+                            {endingEvent ? "Ending Event" : "End"}
                           </Button>
                         </div>
                       </div>
@@ -386,7 +395,7 @@ const Admin = () => {
                         className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent"
                       >
                         <option value="">Choose an event...</option>
-                        {activeEvents.map((event) => (
+                        {activeEvents?.map((event: any) => (
                           <option key={event.id} value={event.id}>
                             {event.title}
                           </option>
@@ -399,11 +408,11 @@ const Admin = () => {
                       <Label htmlFor="update.title">Update Title</Label>
                       <Input
                         id="update.title"
-                        {...registerUpdate("update.title")}
+                        {...registerUpdate("title")}
                         placeholder="Enter update title"
                       />
-                      {updateErrors.update?.title && (
-                        <p className="text-red-500 text-sm">{updateErrors.update.title.message}</p>
+                      {updateErrors.title && (
+                        <p className="text-red-500 text-sm">{updateErrors.title.message}</p>
                       )}
                     </div>
 
@@ -411,12 +420,12 @@ const Admin = () => {
                       <Label htmlFor="update.details">Details</Label>
                       <Textarea
                         id="update.details"
-                        {...registerUpdate("update.details")}
+                        {...registerUpdate("details")}
                         placeholder="Enter update details"
                         rows={4}
                       />
-                      {updateErrors.update?.details && (
-                        <p className="text-red-500 text-sm">{updateErrors.update.details.message}</p>
+                      {updateErrors.details && (
+                        <p className="text-red-500 text-sm">{updateErrors.details.message}</p>
                       )}
                     </div>
 
@@ -593,7 +602,7 @@ const Admin = () => {
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className="text-center p-6 border border-border rounded-lg">
-                    <div className="text-3xl font-bold text-accent mb-2">2,139</div>
+                    <div className="text-3xl font-bold text-accent mb-2">{analytics?.total}</div>
                     <div className="text-muted-foreground">Total Viewers</div>
                   </div>
                   <div className="text-center p-6 border border-border rounded-lg">

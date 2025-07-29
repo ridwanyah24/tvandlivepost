@@ -142,7 +142,7 @@ const baseQueryWithReauth: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQue
 
 // Define the valid tags that can be used for cache invalidation
 
-type ValidTags = "loggedIn"
+type ValidTags = "loggedIn" | "events" |"analytics"
 
 type MutationArg = {
     /** The URL for the request */
@@ -160,7 +160,7 @@ type MutationArg = {
 export const apiSlice = createApi({
     reducerPath: "api",
     baseQuery: baseQueryWithReauth,
-    tagTypes: ["loggedIn"],
+    tagTypes: ["loggedIn", "events", "analytics"],
     endpoints: (builder) => ({
         genericMutation: builder.mutation<
             any,
@@ -173,11 +173,30 @@ export const apiSlice = createApi({
             }),
             invalidatesTags: (_, __, arg) => arg?.invalidatesTags || [],
         }),
-        // getAllEvents: builder.query()
+        getAllEvents: builder.query<any, Partial<void>>({
+            query() {
+                return {
+                    url: `/events`,
+                    method: "GET"
+                };
+            },
+            providesTags: ['events']
+        }),
+        getAnalytics: builder.query<any, Partial<void>>({
+            query() {
+                return {
+                    url: `/admin/analytics`,
+                    method: "GET"
+                };
+            },
+            providesTags: ['analytics']
+        }),
     }),
 });
 
 export const {
     usePrefetch,
     useGenericMutationMutation,
+    useGetAllEventsQuery,
+    useGetAnalyticsQuery,
 } = apiSlice;
