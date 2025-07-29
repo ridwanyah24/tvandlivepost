@@ -18,18 +18,18 @@ import {
   StopCircleIcon
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useGenericMutationMutation, useGetAllEventsQuery, useGetAnalyticsQuery } from "@/slice/requestSlice";
+import { useGenericMutationMutation, useGetAllEventsQuery, useGetAnalyticsQuery, useGetRecentUpdatesQuery, useGetRecentVideosQuery } from "@/slice/requestSlice";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAppSelector } from "@/hooks/redux-hooks";
 import { selectCurrentAdminAccess } from "@/slice/authAdmin";
 import { useRouter } from "next/navigation";
-import { types } from "util";
+import { timeSince } from "@/utils/formatDate";
 
 
 
-export const createEventSchema = z.object({
+const createEventSchema = z.object({
   title: z.string().min(1, "Event title is required"),
   description: z.string().optional()
 });
@@ -50,7 +50,7 @@ const updateSchema = z.object({
 
 });
 
-export const uploadVideoSchema = z.object({
+const uploadVideoSchema = z.object({
   title: z.string().min(1, "Title is required"),
   thumbnail: z
     .instanceof(File)
@@ -79,8 +79,10 @@ const Admin = () => {
 
   const { data: activeEvents, isLoading: loadingEvents, isError: eventsError } = useGetAllEventsQuery();
   const {data:analytics, isLoading:loadingAnalytics, isError: errorAnalytics} = useGetAnalyticsQuery();
+ 
+  const {data:recentUpdates, isLoading:loadUpdates, isError:loadError } = useGetRecentUpdatesQuery();
 
-  console.log(analytics);
+  const {data:recentVideos, isLoading:loadVideos, isError:loadvidError } = useGetRecentVideosQuery();
 
 
   const accessToken = useAppSelector(selectCurrentAdminAccess);
@@ -102,7 +104,7 @@ const Admin = () => {
   }, [accessToken, router, toast]);
 
   // You can optionally return null or a spinner until redirect completes
-  if (!accessToken) return null;
+//   if (!accessToken) return null;
 
   const {
     register: registerEvent,
@@ -134,47 +136,7 @@ const Admin = () => {
   } = useForm({
     resolver: zodResolver(uploadVideoSchema),
   });
-
-  // Mock data
-
-
-  const recentUpdates = [
-    {
-      id: "1",
-      eventTitle: "Tech Conference 2024",
-      title: "CEO Takes the Stage",
-      likes: 42,
-      comments: 8,
-      timestamp: "2 minutes ago"
-    },
-    {
-      id: "2",
-      eventTitle: "Product Launch Event",
-      title: "New Product Announcement",
-      likes: 87,
-      comments: 15,
-      timestamp: "5 minutes ago"
-    }
-  ];
-
-  const recentVideos = [
-    {
-      id: "1",
-      title: "Tech Innovation Summit 2024",
-      views: 15400,
-      likes: 892,
-      comments: 156,
-      status: "published"
-    },
-    {
-      id: "2",
-      title: "Product Launch Highlights",
-      views: 8900,
-      likes: 654,
-      comments: 89,
-      status: "published"
-    }
-  ];
+ 
 
   const handleCreateEvent = (data: z.infer<typeof createEventSchema>) => {
     console.log(data);
@@ -464,11 +426,11 @@ const Admin = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {recentUpdates.map((update) => (
+                    {recentUpdates?.map((update:any) => (
                       <div key={update.id} className="p-4 border border-border rounded-lg">
                         <div className="flex items-start justify-between mb-2">
                           <h3 className="font-semibold text-foreground text-sm">{update.title}</h3>
-                          <span className="text-xs text-muted-foreground">{update.timestamp}</span>
+                          <span className="text-xs text-muted-foreground">{timeSince(update.timestamp)}</span>
                         </div>
                         <p className="text-xs text-muted-foreground mb-3">{update.eventTitle}</p>
                         <div className="flex items-center space-x-4 text-xs text-muted-foreground">
@@ -565,7 +527,7 @@ const Admin = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {recentVideos.map((video) => (
+                    {recentVideos?.map((video:any) => (
                       <div key={video.id} className="p-4 border border-border rounded-lg">
                         <div className="flex items-start justify-between mb-2">
                           <h3 className="font-semibold text-foreground text-sm">{video.title}</h3>
@@ -602,7 +564,7 @@ const Admin = () => {
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className="text-center p-6 border border-border rounded-lg">
-                    <div className="text-3xl font-bold text-accent mb-2">{analytics?.total}</div>
+                    <div className="text-3xl font-bold text-accent mb-2">{analytics?.total_views}</div>
                     <div className="text-muted-foreground">Total Viewers</div>
                   </div>
                   <div className="text-center p-6 border border-border rounded-lg">

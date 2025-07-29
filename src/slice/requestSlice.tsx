@@ -142,7 +142,7 @@ const baseQueryWithReauth: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQue
 
 // Define the valid tags that can be used for cache invalidation
 
-type ValidTags = "loggedIn" | "events" |"analytics"|"updates" | "videos"
+type ValidTags = "loggedIn" | "events" | "analytics" | "updates" | "videos"
 
 type MutationArg = {
     /** The URL for the request */
@@ -209,14 +209,11 @@ export const apiSlice = createApi({
             },
             providesTags: ['videos']
         }),
-         getEventUpdates: builder.query<any, Partial<any>>({
-            query({id}:{id:string}) {
-                return {
-                    url: `/events/${id}/updates`,
-                    method: "GET"
-                };
-            },
-            providesTags: ['videos']
+        getEventUpdates: builder.query<any, { id: string }>({
+            query: ({ id }:{id:string}) => ({
+                url: `/events/${id}/updates`,
+                method: "GET",
+            }),
         }),
     }),
 });
