@@ -40,24 +40,36 @@ const LiveUpdateCard = ({ update, onLike, onComment }: LiveUpdateCardProps) => {
   const [isLiked, setIsLiked] = useState(update.isLiked || false);
   const [isCommenting, setIsCommenting] = useState(false);
   const [newComment, setNewComment] = useState("");
+  const [likeId, setLikeId] = useState<number | null>(null);
+
 
 
   const handleLike = () => {
+    if (!update?.id) return;
+
     const method = isLiked ? "DELETE" : "POST";
+    const url = isLiked ? `/likes/${likeId}` : `/updates/${update.id}/likes`;
 
     likeUpdate({
-      url: `/updates/${update.id}/likes`,
+      url,
       method,
       invalidatesTags: [{ type: "event-updates" }],
     })
       .unwrap()
-      .then(() => {
+      .then((res) => {
         toast({
           title: "Success",
           description: isLiked ? "Like removed!" : "Update liked!",
         });
-        setIsLiked(!isLiked); // Toggle like state
-        onLike(update.id); // Trigger parent state or analytics
+
+        if (!isLiked && res?.id) {
+          setLikeId(res.id); // Store like_id for potential unlike
+        } else if (isLiked) {
+          setLikeId(null); // Reset like_id after deletion
+        }
+
+        setIsLiked(!isLiked);
+        // onLike(update.id); // Notify parent or analytics
       })
       .catch((error) => {
         toast({

@@ -81,7 +81,8 @@ const Admin = () => {
   const {data:analytics, isLoading:loadingAnalytics, isError: errorAnalytics} = useGetAnalyticsQuery();
  
   const {data:recentUpdates, isLoading:loadUpdates, isError:loadError } = useGetRecentUpdatesQuery();
-
+  console.log(recentUpdates);
+  
   const {data:recentVideos, isLoading:loadVideos, isError:loadvidError } = useGetRecentVideosQuery();
 
 
@@ -90,7 +91,7 @@ const Admin = () => {
 
   const router = useRouter();
 
-  // 🔐 Protect route
+  // Protect route
   useEffect(() => {
     if (!accessToken) {
       toast({
@@ -426,7 +427,7 @@ const Admin = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {recentUpdates?.map((update:any) => (
+                    {(recentUpdates || []).map((update:any) => (
                       <div key={update.id} className="p-4 border border-border rounded-lg">
                         <div className="flex items-start justify-between mb-2">
                           <h3 className="font-semibold text-foreground text-sm">{update.title}</h3>
@@ -436,11 +437,11 @@ const Admin = () => {
                         <div className="flex items-center space-x-4 text-xs text-muted-foreground">
                           <div className="flex items-center">
                             <HeartIcon className="w-3 h-3 mr-1" />
-                            {update.likes}
+                            {update.likes.length}
                           </div>
                           <div className="flex items-center">
                             <MessageCircleIcon className="w-3 h-3 mr-1" />
-                            {update.comments}
+                            {update.comments.length}
                           </div>
                         </div>
                       </div>
