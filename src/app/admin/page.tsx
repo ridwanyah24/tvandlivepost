@@ -166,8 +166,8 @@ const Admin = () => {
   const handleCreateUpdate = (data: z.infer<typeof updateSchema>) => {
     const formData = new FormData();
     // Append the update object as a JSON string
-    formData.append("title", JSON.stringify(data.title));
-    formData.append("details", JSON.stringify(data.details));
+    formData.append("title", data.title);
+    formData.append("details", data.details);
 
     // Append the image file
     if (data.image_file) {

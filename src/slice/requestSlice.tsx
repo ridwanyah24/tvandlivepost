@@ -141,26 +141,35 @@ const baseQueryWithReauth: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQue
  */
 
 // Define the valid tags that can be used for cache invalidation
-
-type ValidTags = "loggedIn" | "events" | "analytics" | "updates" | "videos"
-
+export type ValidTags =
+    | "loggedIn"
+    | "events"
+    | "analytics"
+    | "updates"
+    | "videos"
+    | "event-updates"
+    | "update-comments";
 type MutationArg = {
-    /** The URL for the request */
-    url: string;
-    /** The HTTP method for the request (defaults to "POST") */
-    method?: 'POST' | 'PUT' | 'PATCH' | 'DELETE';
-    /** The body of the request */
-    body?: any;
-    /** Tags to invalidate cached data upon request completion */
-    invalidatesTags?: { type: ValidTags; id?: string | number }[];
+  /** The URL for the request */
+  url: string;
+  
+  /** The HTTP method for the request (defaults to "POST") */
+  method?: 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+  
+  /** The body of the request */
+  body?: any;
+  
+  /** Tags to invalidate cached data upon request completion */
+  invalidatesTags?: Array<{
+    type: ValidTags;
+    id?: string | number;
+  }>;
 };
-
-
 
 export const apiSlice = createApi({
     reducerPath: "api",
     baseQuery: baseQueryWithReauth,
-    tagTypes: ["loggedIn", "events", "analytics", "updates", "videos"],
+    tagTypes: ["loggedIn", "events", "analytics", "updates", "videos", "event-updates", "update-comments"] as readonly ValidTags[],
     endpoints: (builder) => ({
         genericMutation: builder.mutation<
             any,
@@ -210,11 +219,19 @@ export const apiSlice = createApi({
             providesTags: ['videos']
         }),
         getEventUpdates: builder.query<any, { id: string }>({
-            query: ({ id }:{id:string}) => ({
+            query: ({ id }: { id: string }) => ({
                 url: `/events/${id}/updates`,
                 method: "GET",
             }),
+            providesTags: ["event-updates"]
         }),
+        getUpdateComments: builder.query<any, { id: string }>({
+            query: ({ id }: { id: string }) => ({
+                url: `/updates/${id}/comments`,
+                method: "GET"
+            }),
+            providesTags:  [{ type: "update-comments" }] 
+        })
     }),
 });
 
@@ -225,5 +242,6 @@ export const {
     useGetAnalyticsQuery,
     useGetRecentUpdatesQuery,
     useGetRecentVideosQuery,
+    useGetUpdateCommentsQuery,
     useGetEventUpdatesQuery,
 } = apiSlice;

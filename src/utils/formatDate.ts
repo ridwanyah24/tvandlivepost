@@ -1,8 +1,11 @@
 export function timeSince(dateString: string): string {
-  const date = new Date(dateString);
+  const date = new Date(dateString + "Z"); // Treat as UTC
   if (isNaN(date.getTime())) return "Invalid date";
 
-  const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
+  const now = new Date();
+  const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+  if (seconds < 0) return "in the future"; // Optional
 
   const intervals: [number, string][] = [
     [31536000, "year"],
@@ -14,8 +17,8 @@ export function timeSince(dateString: string): string {
     [1, "second"],
   ];
 
-  for (const [intervalSeconds, label] of intervals) {
-    const count = Math.floor(seconds / intervalSeconds);
+  for (const [interval, label] of intervals) {
+    const count = Math.floor(seconds / interval);
     if (count >= 1) {
       return `${count} ${label}${count > 1 ? "s" : ""} ago`;
     }

@@ -6,6 +6,9 @@ import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { timeSince } from "@/utils/formatDate";
 import { SendIcon } from "lucide-react";
+import { useGenericMutationMutation, useGetUpdateCommentsQuery, ValidTags } from "@/slice/requestSlice";
+import { toast } from "@/hooks/use-toast";
+
 
 
 interface LiveUpdate {
@@ -15,9 +18,9 @@ interface LiveUpdate {
   details: string;
   timestamp: string;
   likes: string | [];
-  comments:  string | [];
+  comments: string | [];
   isLiked?: boolean;
-  image?: string;
+  image_url?: string;
   commentList?: { id: string; text: string; user: string }[]; // Optional
 }
 
@@ -27,14 +30,42 @@ interface LiveUpdateCardProps {
   onComment: (id: string, commentText: string) => void;
 }
 
+
+
 const LiveUpdateCard = ({ update, onLike, onComment }: LiveUpdateCardProps) => {
+  const [postComment, { isLoading, isError }] = useGenericMutationMutation();
+  const [likeUpdate, { isLoading: loadingLike, isError: errorLike }] = useGenericMutationMutation();
+  const { data: updateComments } = useGetUpdateCommentsQuery({ id: update.id });
+
   const [isLiked, setIsLiked] = useState(update.isLiked || false);
   const [isCommenting, setIsCommenting] = useState(false);
   const [newComment, setNewComment] = useState("");
 
+
   const handleLike = () => {
-    setIsLiked(!isLiked);
-    onLike(update.id);
+    const method = isLiked ? "DELETE" : "POST";
+
+    likeUpdate({
+      url: `/updates/${update.id}/likes`,
+      method,
+      invalidatesTags: [{ type: "event-updates" }],
+    })
+      .unwrap()
+      .then(() => {
+        toast({
+          title: "Success",
+          description: isLiked ? "Like removed!" : "Update liked!",
+        });
+        setIsLiked(!isLiked); // Toggle like state
+        onLike(update.id); // Trigger parent state or analytics
+      })
+      .catch((error) => {
+        toast({
+          title: "Error",
+          description: error?.data?.message || "Failed to toggle like.",
+          variant: "destructive",
+        });
+      });
   };
 
   const handleCommentToggle = () => {
@@ -43,14 +74,27 @@ const LiveUpdateCard = ({ update, onLike, onComment }: LiveUpdateCardProps) => {
 
   const handleAddComment = () => {
     if (newComment.trim()) {
-      onComment(update.id, newComment.trim());
+      postComment({
+        url: `/updates/${update.id}/comments`,
+        method: "POST",
+        body: {
+          content: newComment.trim()
+        },
+        invalidatesTags: [{ type: "update-comments" }]
+      }).unwrap().then(() => {
+        toast({
+          title: "Success",
+          description: "You posted a comment!",
+        });
+      }).catch((error) => {
+        toast({
+          title: "Error",
+          description: error?.data?.message || "Failed to post comment.",
+          variant: "destructive",
+        });
+      });
       setNewComment("");
     }
-  };
-
-  const formatTime = (timestamp: string) => {
-    const date = new Date(timestamp);
-    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
 
   return (
@@ -64,36 +108,33 @@ const LiveUpdateCard = ({ update, onLike, onComment }: LiveUpdateCardProps) => {
           </div>
         </div>
 
-        <p className="text-muted-foreground mb-4 leading-relaxed">{update.details}</p>
-
-        {update.image && (
+        {update.image_url && (
           <div className="mb-4">
             <img
-              src={update.image}
+              src={update?.image_url}
               alt={update.title}
-              className="w-full h-64 object-cover rounded-lg border border-border"
+              className="w-full h-[400px] object-cover object-center rounded-lg border border-border"
             />
           </div>
         )}
-
+        <p className="text-muted-foreground mb-4 leading-relaxed">{update.details}</p>
         <div className="flex items-center space-x-4">
           <Button
             variant="ghost"
             size="sm"
             onClick={handleLike}
-            className={`flex items-center space-x-2 transition-colors ${
-              isLiked ? "text-accent" : "text-muted-foreground hover:text-foreground"
-            }`}
+            className={`flex items-center space-x-2 transition-colors cursor-pointer ${isLiked ? "text-accent" : "text-muted-foreground hover:text-foreground"
+              }`}
           >
             <HeartIcon className={`w-4 h-4 ${isLiked ? "fill-current" : ""}`} />
-            <span className="hover:text-foreground">{update.likes.length + (isLiked && !update.isLiked ? 1 : 0)}</span>
+            <span className="hover:text-foreground">{update.likes.length}</span>
           </Button>
 
           <Button
             variant="ghost"
             size="sm"
             onClick={handleCommentToggle}
-            className="flex items-center space-x-2 text-muted-foreground hover:text-foreground"
+            className="flex items-center cursor-pointer space-x-2 text-muted-foreground hover:text-foreground"
           >
             <MessageCircleIcon className="w-4 h-4" />
             <span>{update.comments.length}</span>
@@ -117,18 +158,16 @@ const LiveUpdateCard = ({ update, onLike, onComment }: LiveUpdateCardProps) => {
 
             {/* Display past comments */}
             <div className="space-y-2 max-h-40 overflow-y-auto pr-2">
-              {(update.commentList || []).map((comment) => (
+              {updateComments?.map((comment: any) => (
                 <div
                   key={comment.id}
-                  className="border border-border p-2 rounded-md text-sm bg-muted"
+                  className="border border-border p-2 rounded-md text-sm bg-muted flex flex-col gap-2 overflow-auto max-h-[100px]"
                 >
-                  <span className="font-medium text-foreground">{comment.user}:</span>{" "}
-                  <span className="text-muted-foreground">{comment.text}</span>
+                  <span className="font-medium text-foreground">{comment.content}</span>{" "}
+                  <span className="text-muted-foreground">{timeSince(comment.timestamp)}</span>
                 </div>
               ))}
-              {(!update.commentList || update.commentList.length === 0) && (
-                <p className="text-xs text-muted-foreground">No comments yet.</p>
-              )}
+
             </div>
           </div>
         )}

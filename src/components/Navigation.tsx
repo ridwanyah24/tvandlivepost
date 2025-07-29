@@ -11,10 +11,12 @@ const Navigation = () => {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
+  
+
   const navItems = [
     { path: "/", label: "Live Updates", icon: RadioIcon },
     { path: "/tv", label: "TV", icon: TvIcon },
-    { path: "/admin", label: "Admin", icon: SettingsIcon },
+    // { path: "/admin", label: "Admin", icon: SettingsIcon },
   ];
 
   const toggleMobileMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen);
