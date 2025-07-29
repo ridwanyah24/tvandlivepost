@@ -606,11 +606,11 @@ const Admin = () => {
                     <div className="text-muted-foreground">Total Viewers</div>
                   </div>
                   <div className="text-center p-6 border border-border rounded-lg">
-                    <div className="text-3xl font-bold text-accent mb-2">20</div>
+                    <div className="text-3xl font-bold text-accent mb-2">{analytics?.total_updates}</div>
                     <div className="text-muted-foreground">Live Updates</div>
                   </div>
                   <div className="text-center p-6 border border-border rounded-lg">
-                    <div className="text-3xl font-bold text-accent mb-2">5</div>
+                    <div className="text-3xl font-bold text-accent mb-2">{analytics?.total_videos}</div>
                     <div className="text-muted-foreground">Videos Published</div>
                   </div>
                 </div>

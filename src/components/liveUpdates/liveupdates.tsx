@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import LiveUpdateCard from "@/components/LiveUpdateCard";
 import { RadioIcon, ClockIcon, UsersIcon } from "lucide-react";
+import { useGetAllEventsQuery } from "@/slice/requestSlice";
 
 // Mock data - replace with API calls
 const mockEvents = [
@@ -82,6 +83,10 @@ const mockUpdates = [
 ];
 
 const LiveUpdates = () => {
+
+  const {data:allEvents, isLoading, isError} = useGetAllEventsQuery();
+  console.log(allEvents);
+  
   const [selectedEvent, setSelectedEvent] = useState(mockEvents[0]);
   const [allUpdates] = useState(mockUpdates);
   
@@ -110,7 +115,7 @@ const LiveUpdates = () => {
             </h2>
             
             <div className="space-y-4">
-              {mockEvents.map((event) => (
+              {allEvents.map((event:any) => (
                 <Card 
                   key={event.id}
                   className={`cursor-pointer transition-all duration-200 hover:shadow-lg ${

@@ -142,7 +142,7 @@ const baseQueryWithReauth: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQue
 
 // Define the valid tags that can be used for cache invalidation
 
-type ValidTags = "loggedIn" | "events" |"analytics"
+type ValidTags = "loggedIn" | "events" |"analytics"|"updates" | "videos"
 
 type MutationArg = {
     /** The URL for the request */
@@ -160,7 +160,7 @@ type MutationArg = {
 export const apiSlice = createApi({
     reducerPath: "api",
     baseQuery: baseQueryWithReauth,
-    tagTypes: ["loggedIn", "events", "analytics"],
+    tagTypes: ["loggedIn", "events", "analytics", "updates", "videos"],
     endpoints: (builder) => ({
         genericMutation: builder.mutation<
             any,
@@ -191,6 +191,33 @@ export const apiSlice = createApi({
             },
             providesTags: ['analytics']
         }),
+        getRecentUpdates: builder.query<any, Partial<void>>({
+            query() {
+                return {
+                    url: `/updates/recent`,
+                    method: "GET"
+                };
+            },
+            providesTags: ['updates']
+        }),
+        getRecentVideos: builder.query<any, Partial<void>>({
+            query() {
+                return {
+                    url: `/tvs/recent`,
+                    method: "GET"
+                };
+            },
+            providesTags: ['videos']
+        }),
+         getEventUpdates: builder.query<any, Partial<any>>({
+            query({id}:{id:string}) {
+                return {
+                    url: `/events/${id}/updates`,
+                    method: "GET"
+                };
+            },
+            providesTags: ['videos']
+        }),
     }),
 });
 
@@ -199,4 +226,7 @@ export const {
     useGenericMutationMutation,
     useGetAllEventsQuery,
     useGetAnalyticsQuery,
+    useGetRecentUpdatesQuery,
+    useGetRecentVideosQuery,
+    useGetEventUpdatesQuery,
 } = apiSlice;
