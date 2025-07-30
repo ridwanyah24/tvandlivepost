@@ -44,7 +44,7 @@ const Navigation = () => {
                   <Button
                     variant={isActive ? "secondary" : "ghost"}
                     className={cn(
-                      "flex items-center text-foreground space-x-2 transition-all duration-200",
+                      "flex items-center text-foreground space-x-2 transition-all duration-200 cursor-pointer",
                       isActive && "bg-accent text-accent-foreground"
                     )}
                   >

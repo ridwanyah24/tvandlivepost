@@ -148,28 +148,29 @@ export type ValidTags =
     | "updates"
     | "videos"
     | "event-updates"
-    | "update-comments";
+    | "update-comments"
+    | "all-videos";
 type MutationArg = {
-  /** The URL for the request */
-  url: string;
-  
-  /** The HTTP method for the request (defaults to "POST") */
-  method?: 'POST' | 'PUT' | 'PATCH' | 'DELETE';
-  
-  /** The body of the request */
-  body?: any;
-  
-  /** Tags to invalidate cached data upon request completion */
-  invalidatesTags?: Array<{
-    type: ValidTags;
-    id?: string | number;
-  }>;
+    /** The URL for the request */
+    url: string;
+
+    /** The HTTP method for the request (defaults to "POST") */
+    method?: 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+
+    /** The body of the request */
+    body?: any;
+
+    /** Tags to invalidate cached data upon request completion */
+    invalidatesTags?: Array<{
+        type: ValidTags;
+        id?: string | number;
+    }>;
 };
 
 export const apiSlice = createApi({
     reducerPath: "api",
     baseQuery: baseQueryWithReauth,
-    tagTypes: ["loggedIn", "events", "analytics", "updates", "videos", "event-updates", "update-comments"] as readonly ValidTags[],
+    tagTypes: ["all-videos", "loggedIn", "events", "analytics", "updates", "videos", "event-updates", "update-comments"] as readonly ValidTags[],
     endpoints: (builder) => ({
         genericMutation: builder.mutation<
             any,
@@ -218,20 +219,50 @@ export const apiSlice = createApi({
             },
             providesTags: ['videos']
         }),
-        getEventUpdates: builder.query<any, { id: string }>({
-            query: ({ id }: { id: string }) => ({
-                url: `/events/${id}/updates`,
+        getEventUpdates: builder.query<any, { id: string; limit?: number; offset?: number }>({
+            query: ({ id, limit = 2, offset = 0 }) => ({
+                url: `/events/${id}/updates?limit=${limit}&offset=${offset}`,
                 method: "GET",
             }),
-            providesTags: ["event-updates"]
+            providesTags: ["event-updates"],
         }),
         getUpdateComments: builder.query<any, { id: string }>({
             query: ({ id }: { id: string }) => ({
                 url: `/updates/${id}/comments`,
                 method: "GET"
             }),
-            providesTags:  [{ type: "update-comments" }] 
-        })
+            providesTags: [{ type: "update-comments" }]
+        }),
+         getVideoComments: builder.query<any, { id: string }>({
+            query: ({ id }: { id: string }) => ({
+                url: `/tvs/${id}/comments`,
+                method: "GET"
+            }),
+            providesTags: [{ type: "update-comments" }]
+        }),
+        getVideoViews: builder.query<any, { id: number | string }>({
+            query: ({ id }: { id: number | string}) => ({
+                url: `/tvs/${id}/views`,
+                method: "GET"
+            }),
+            providesTags: [{ type: "all-videos" }]
+        }),
+         getSingleVideo: builder.query<any, { id: number | string }>({
+            query: ({ id }: { id: number | string}) => ({
+                url: `/tvs/${id}`,
+                method: "GET"
+            }),
+            providesTags: [{ type: "all-videos" }]
+        }),
+        getAllVideos: builder.query<any, Partial<void>>({
+            query() {
+                return {
+                    url: `/tvs`,
+                    method: "GET"
+                };
+            },
+            providesTags: ['all-videos']
+        }),
     }),
 });
 
@@ -244,4 +275,8 @@ export const {
     useGetRecentVideosQuery,
     useGetUpdateCommentsQuery,
     useGetEventUpdatesQuery,
+    useGetAllVideosQuery,
+    useGetVideoViewsQuery,
+    useGetSingleVideoQuery,
+    useGetVideoCommentsQuery,
 } = apiSlice;

@@ -179,7 +179,6 @@ const LiveUpdateCard = ({ update, onLike, onComment }: LiveUpdateCardProps) => {
                   <span className="text-muted-foreground">{timeSince(comment.timestamp)}</span>
                 </div>
               ))}
-
             </div>
           </div>
         )}

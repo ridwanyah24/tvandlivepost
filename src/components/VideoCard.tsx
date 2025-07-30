@@ -2,27 +2,33 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { HeartIcon, MessageCircleIcon, EyeIcon, PlayIcon } from "lucide-react";
 import { useState } from "react";
+import { useGetVideoViewsQuery } from "@/slice/requestSlice";
+import { useRouter } from "next/navigation";
 
 interface Video {
-  id: string;
+  id:  number;
   title: string;
   views: number;
-  likes: number;
-  comments: number;
-  thumbnail: string;
+  likes: [];
+  comments: [];
+  thumbnail_url: string;
   duration: string;
   isLiked?: boolean;
 }
 
 interface VideoCardProps {
   video: Video;
-  onPlay: (id: string) => void;
-  onLike: (id: string) => void;
-  onComment: (id: string) => void;
+  onPlay: (id: string | number) => void;
+  onLike: (id: number) => void;
+  onComment: (id: string | number) => void;
   size?: "small" | "large";
 }
 
 const VideoCard = ({ video, onPlay, onLike, onComment, size = "large" }: VideoCardProps) => {
+
+  const router = useRouter();
+  
+  const {data:videoViews} = useGetVideoViewsQuery({id:video.id})
   const [isLiked, setIsLiked] = useState(video.isLiked || false);
 
   const handleLike = () => {
@@ -36,7 +42,7 @@ const VideoCard = ({ video, onPlay, onLike, onComment, size = "large" }: VideoCa
     } else if (num >= 1000) {
       return (num / 1000).toFixed(1) + "K";
     }
-    return num.toString();
+    return num;
   };
 
   const cardClassName = size === "small" 
@@ -50,11 +56,11 @@ const VideoCard = ({ video, onPlay, onLike, onComment, size = "large" }: VideoCa
   return (
     <Card className={cardClassName}>
       <div 
-        className={`relative ${thumbnailClassName} bg-muted rounded-t-lg overflow-hidden cursor-pointer group`}
+        className={`relative ${thumbnailClassName} bg-muted rounded-t-lg overflow-hidden cursor-pointer group w-full`}
         onClick={() => onPlay(video.id)}
       >
         <img
-          src={video.thumbnail}
+          src={video.thumbnail_url}
           alt={video.title}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
         />
@@ -77,7 +83,7 @@ const VideoCard = ({ video, onPlay, onLike, onComment, size = "large" }: VideoCa
           <div className="flex items-center space-x-4 text-muted-foreground text-sm">
             <div className="flex items-center space-x-1">
               <EyeIcon className="w-4 h-4" />
-              <span>{formatNumber(video.views)}</span>
+              <span>{formatNumber(videoViews)}</span>
             </div>
           </div>
 
@@ -91,17 +97,17 @@ const VideoCard = ({ video, onPlay, onLike, onComment, size = "large" }: VideoCa
               }`}
             >
               <HeartIcon className={`w-4 h-4 ${isLiked ? "fill-current" : ""}`} />
-              <span className="text-xs">{formatNumber(video.likes + (isLiked && !video.isLiked ? 1 : 0))}</span>
+              <span className="text-xs">{video.likes.length}</span>
             </Button>
             
             <Button
               variant="ghost"
               size="sm"
               onClick={() => onComment(video.id)}
-              className="flex items-center space-x-1 text-muted-foreground hover:text-foreground"
+              className="flex items-center space-x-1 text-muted-foreground hover:bg-[#222222]"
             >
               <MessageCircleIcon className="w-4 h-4" />
-              <span className="text-xs">{formatNumber(video.comments)}</span>
+              <span className="text-xs">{video.comments.length}</span>
             </Button>
           </div>
         </div>

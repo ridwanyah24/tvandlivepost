@@ -12,6 +12,10 @@ import { skipToken } from "@reduxjs/toolkit/query";
 const LiveUpdates = () => {
   const { data: mockEvents, isLoading, isError } = useGetAllEventsQuery();
   const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
+  const [loadedUpdates, setLoadedUpdates] = useState<any[]>([]);
+  const [offset, setOffset] = useState(0);
+  const limit = 2; // how many per page
+  const maxUpdates = 5;
 
   // Set default event when events are fetched
   useEffect(() => {
@@ -20,8 +24,34 @@ const LiveUpdates = () => {
     }
   }, [mockEvents]);
 
-  const { data: mockUpdates, isLoading: loadingUpdates, isError: updateError } =
-    useGetEventUpdatesQuery(selectedEvent?.id ? { id: selectedEvent.id } : skipToken);
+  useEffect(() => {
+    if (selectedEvent) {
+      setOffset(0);
+      setLoadedUpdates([]); // reset updates when event changes
+    }
+  }, [selectedEvent]);
+
+  const { data: mockUpdates, isLoading: loading, isError: error } = useGetEventUpdatesQuery(
+    selectedEvent?.id
+      ? { id: selectedEvent.id, limit, offset }
+      : skipToken
+  );
+
+  useEffect(() => {
+    if (mockUpdates?.length) {
+      setLoadedUpdates((prev) => {
+        const combined = [...prev, ...mockUpdates];
+        const unique = Array.from(new Map(combined.map(u => [u.id, u])).values()); // avoid duplicates
+        return unique.slice(0, maxUpdates); // cap at 5
+      });
+    }
+  }, [mockUpdates]);
+
+  const handleLoadMore = () => {
+    if (loadedUpdates.length < maxUpdates) {
+      setOffset((prev) => prev + limit);
+    }
+  };
 
   const handleLike = (updateId: string) => {
     console.log("Liked update:", updateId);
@@ -42,16 +72,13 @@ const LiveUpdates = () => {
               Live Events
             </h2>
 
-            {/* {isLoading && <p className="text-muted-foreground">Loading events...</p>} */}
-            {/* {isError && <p className="text-red-500">Failed to load events</p>} */}
-
             <div className="space-y-4">
               {mockEvents?.map((event: any) => (
                 <Card
                   key={event.id}
                   className={`cursor-pointer transition-all duration-200 hover:shadow-lg ${selectedEvent?.id === event.id
-                      ? "border-accent shadow-lg"
-                      : "border-border"
+                    ? "border-accent shadow-lg"
+                    : "border-border"
                     }`}
                   onClick={() => setSelectedEvent(event)}
                 >
@@ -68,7 +95,7 @@ const LiveUpdates = () => {
                         <ClockIcon className="w-3 h-3 mr-1" />
                         {event.updates.length} updates
                       </div>
-                      
+
                     </div>
                   </CardContent>
                 </Card>
@@ -109,11 +136,7 @@ const LiveUpdates = () => {
                 Live Updates
               </h3>
 
-              {/* {loadingUpdates && <p className="text-muted-foreground">Loading updates...</p>} */}
-              {/* {updateError && <p className="text-red-500">Failed to load updates.</p>} */}
-              {/* {mockUpdates?.length === 0 && <p>No updates for this event yet.</p>} */}
-
-              {mockUpdates?.map((update: any) => (
+              {loadedUpdates?.map((update: any) => (
                 <LiveUpdateCard
                   key={update.id}
                   update={update}
@@ -123,14 +146,18 @@ const LiveUpdates = () => {
               ))}
             </div>
 
-            <div className="text-center mt-8">
-              <Button
-                variant="outline"
-                className="border-accent text-accent hover:bg-accent hover:text-accent-foreground"
-              >
-                Load More Updates
-              </Button>
-            </div>
+            {loadedUpdates.length < maxUpdates && (
+              <div className="text-center mt-8">
+                <Button
+                  onClick={handleLoadMore}
+                  variant="outline"
+                  className="border-accent text-accent hover:bg-accent hover:text-accent-foreground cursor-pointer"
+                  disabled={loading}
+                >
+                  {loading ? "Loading..." : "Load More Updates"}
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </div>
