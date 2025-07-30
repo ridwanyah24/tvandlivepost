@@ -12,7 +12,6 @@ import { useRouter } from "next/navigation";
 import { toast } from "@/hooks/use-toast";
 
 
-
 export default function Page({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
     const { data } = useGetSingleVideoQuery({ id })
@@ -58,9 +57,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
         }
     };
 
-
     const handleComment = (videoId: string | number) => {
-
         console.log("Open comments for video:", videoId);
     };
 

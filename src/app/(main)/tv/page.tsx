@@ -72,7 +72,6 @@ const TV = () => {
   };
 
   const handleComment = (videoId: string | number) => {
-
     console.log("Open comments for video:", videoId);
   };
 

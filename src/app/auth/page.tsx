@@ -67,7 +67,9 @@ export default function Page() {
     <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-background px-4">
       <div className="w-full max-w-md bg-white dark:bg-card rounded-xl shadow-md p-6">
         {/* <Image src="/blacctheddi.jpg" alt="" width={100} height={100} className="mx-auto"/> */}
-        <h2 className="text-xl font-bold mb-6 text-center">Blaccthedi Live Updates & Tv Admin Login</h2>
+        <h2 className="text-xl font-bold mb-6 text-center">
+          Blaccthedi Admin - Change Password
+        </h2>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
             <FormField
@@ -116,7 +118,7 @@ export default function Page() {
                 );
               }}
             />
-
+            <p className="text-accent font-medium text-md underline cursor-pointer" onClick={() => router.push("/auth/changePasswd")}>Change Password</p>
             <Button type="submit" className="w-full cursor-pointer hover:bg-accent" disabled={isLoading} >
               {isLoading ? "Logging in..." : "Login"}
             </Button>

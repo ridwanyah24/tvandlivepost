@@ -84,7 +84,8 @@ const Admin = () => {
   console.log(recentUpdates);
   
   const {data:recentVideos, isLoading:loadVideos, isError:loadvidError } = useGetRecentVideosQuery();
-
+  console.log(recentVideos);
+  
 
   const accessToken = useAppSelector(selectCurrentAdminAccess);
   console.log(accessToken);
@@ -532,20 +533,20 @@ const Admin = () => {
                       <div key={video.id} className="p-4 border border-border rounded-lg">
                         <div className="flex items-start justify-between mb-2">
                           <h3 className="font-semibold text-foreground text-sm">{video.title}</h3>
-                          <Badge variant="secondary">{video.status}</Badge>
+                          {/* <Badge variant="secondary">{video.status}</Badge> */}
                         </div>
                         <div className="flex items-center space-x-4 text-xs text-muted-foreground">
                           <div className="flex items-center">
                             <EyeIcon className="w-3 h-3 mr-1" />
-                            {video.views.toLocaleString()}
+                            {video.views}
                           </div>
                           <div className="flex items-center">
                             <HeartIcon className="w-3 h-3 mr-1" />
-                            {video.likes}
+                            {video.likes.length}
                           </div>
                           <div className="flex items-center">
                             <MessageCircleIcon className="w-3 h-3 mr-1" />
-                            {video.comments}
+                            {video.comments.length}
                           </div>
                         </div>
                       </div>
