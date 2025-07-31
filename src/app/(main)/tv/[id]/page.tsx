@@ -22,7 +22,6 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
     const [likeId, setLikeId] = useState<number | null>(null);
     const [isLiked, setIsLiked] = useState(false);
     const [likeVideo] = useGenericMutationMutation();
-
     const [expanded, setExpanded] = useState(false);
     const maxLength = 100; // Number of characters to show when collapsed
     const toggleExpanded = () => setExpanded((prev) => !prev);
@@ -30,7 +29,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
     const isTruncated = description?.length > maxLength;
     const displayedText = expanded ? description : description?.slice(0, maxLength);
 
-    console.log(description);
+    // console.log(description);
     
 
     const handlePlay = (videoId: string | number) => {
@@ -166,7 +165,18 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
                                                 <SendIcon />
                                             </Button>
                                         </div>
-                                        <div className="flex flex-col gap-2">
+                                        <div className="space-y-2 max-h-40 overflow-y-auto pr-2">
+                                            {updateComments?.map((comment: any) => (
+                                                <div
+                                                    key={comment.id}
+                                                    className="border border-border p-2 rounded-md text-sm bg-muted flex flex-col gap-2 overflow-auto max-h-[100px]"
+                                                >
+                                                    <span className="font-medium text-foreground">{comment.content}</span>{" "}
+                                                    <span className="text-muted-foreground">{timeSince(comment.timestamp)}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                         <div className="flex flex-col gap-2">
                                             <p className="text-lg font-medium">Description</p>
                                             <p>
                                                 {displayedText}
@@ -180,18 +190,6 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
                                                     </button>
                                                 )}
                                             </p>
-                                        </div>
-
-                                        <div className="space-y-2 max-h-40 overflow-y-auto pr-2">
-                                            {updateComments?.map((comment: any) => (
-                                                <div
-                                                    key={comment.id}
-                                                    className="border border-border p-2 rounded-md text-sm bg-muted flex flex-col gap-2 overflow-auto max-h-[100px]"
-                                                >
-                                                    <span className="font-medium text-foreground">{comment.content}</span>{" "}
-                                                    <span className="text-muted-foreground">{timeSince(comment.timestamp)}</span>
-                                                </div>
-                                            ))}
                                         </div>
                                     </div>
                                 </CardContent>

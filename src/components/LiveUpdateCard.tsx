@@ -8,6 +8,7 @@ import { timeSince } from "@/utils/formatDate";
 import { SendIcon } from "lucide-react";
 import { useGenericMutationMutation, useGetUpdateCommentsQuery, ValidTags } from "@/slice/requestSlice";
 import { toast } from "@/hooks/use-toast";
+import { useRouter } from "next/navigation";
 
 
 
@@ -41,7 +42,7 @@ const LiveUpdateCard = ({ update, onLike, onComment }: LiveUpdateCardProps) => {
   const [isCommenting, setIsCommenting] = useState(false);
   const [newComment, setNewComment] = useState("");
   const [likeId, setLikeId] = useState<number | null>(null);
-
+  const router = useRouter();
 
 
   const handleLike = () => {
@@ -110,7 +111,7 @@ const LiveUpdateCard = ({ update, onLike, onComment }: LiveUpdateCardProps) => {
   };
 
   return (
-    <Card className="mb-4 hover:bg-muted/50 transition-colors duration-200 border-border">
+    <Card className="mb-4 hover:bg-muted/50 transition-colors duration-200 border-border" >
       <CardContent className="lg:p-6 p-2">
         <div className="flex items-start justify-between mb-3">
           <h3 className="text-lg font-semibold text-foreground">{update.title}</h3>
@@ -121,7 +122,7 @@ const LiveUpdateCard = ({ update, onLike, onComment }: LiveUpdateCardProps) => {
         </div>
 
         {update.image_url && (
-          <div className="mb-4">
+          <div className="mb-4 cursor-pointer" onClick={()=>{router.push(`/${update.id}`)}}>
             <img
               src={update?.image_url}
               alt={update.title}

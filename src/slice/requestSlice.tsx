@@ -233,7 +233,7 @@ export const apiSlice = createApi({
             }),
             providesTags: [{ type: "update-comments" }]
         }),
-         getVideoComments: builder.query<any, { id: string }>({
+        getVideoComments: builder.query<any, { id: string }>({
             query: ({ id }: { id: string }) => ({
                 url: `/tvs/${id}/comments`,
                 method: "GET"
@@ -241,30 +241,35 @@ export const apiSlice = createApi({
             providesTags: [{ type: "update-comments" }]
         }),
         getVideoViews: builder.query<any, { id: number | string }>({
-            query: ({ id }: { id: number | string}) => ({
+            query: ({ id }: { id: number | string }) => ({
                 url: `/tvs/${id}/views`,
                 method: "GET"
             }),
             providesTags: [{ type: "all-videos" }]
         }),
-         getSingleVideo: builder.query<any, { id: number | string }>({
-            query: ({ id }: { id: number | string}) => ({
+        getSingleVideo: builder.query<any, { id: number | string }>({
+            query: ({ id }: { id: number | string }) => ({
                 url: `/tvs/${id}`,
                 method: "GET"
             }),
             providesTags: [{ type: "all-videos" }]
         }),
-        getAllVideos: builder.query<any, Partial<void>>({
-            query() {
+        getAllVideos: builder.query<any, Partial<{ category_ids?: number[] }>>({
+            query: ({ category_ids } = {}) => {
+                const searchParams = new URLSearchParams();
+                if (category_ids && category_ids.length > 0) {
+                    category_ids.forEach(id => searchParams.append('category_ids', id.toString()));
+                }
+
                 return {
-                    url: `/tvs`,
-                    method: "GET"
+                    url: `/tvs/ungrouped?${searchParams.toString()}`,
+                    method: "GET",
                 };
             },
-            providesTags: ['all-videos']
+            providesTags: ['all-videos'],
         }),
         getAllCategories: builder.query<any, Partial<void>>({
-            query(){
+            query() {
                 return {
                     url: `/categories`,
                     method: "GET",

@@ -5,19 +5,31 @@ import CustomVideoPlayer from "@/components/CustomVideoPlayer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { TvIcon, TrendingUpIcon, XIcon, SendIcon } from "lucide-react";
-import { useGenericMutationMutation, useGetAllVideosQuery, useGetUpdateCommentsQuery, useGetVideoCommentsQuery } from "@/slice/requestSlice";
+import { useGenericMutationMutation, useGetAllCategoriesQuery, useGetAllVideosQuery, useGetUpdateCommentsQuery, useGetVideoCommentsQuery } from "@/slice/requestSlice";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import { timeSince } from "@/utils/formatDate";
 import { useRouter } from "next/navigation";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 
 const TV = () => {
-  const { data: mockVideos, isLoading } = useGetAllVideosQuery();
+
+  const [selectedCategory, setSelectedCategory] = useState<string | undefined>();
+  const { data: mockVideos, isLoading } = useGetAllVideosQuery(selectedCategory ? { category_ids: [parseInt(selectedCategory)] } : {});
+
+  const { data: category_ids } = useGetAllCategoriesQuery();
   const [likeId, setLikeId] = useState<number | null>(null);
   const [isLiked, setIsLiked] = useState(false);
   const [likeVideo] = useGenericMutationMutation();
   const router = useRouter();
+
 
   const [videos, setVideos] = useState<any[]>([]);
 
@@ -47,7 +59,7 @@ const TV = () => {
       invalidatesTags: [{ type: "all-videos" }],
     })
       .unwrap()
-      .then((res) => {
+      .then((res: any) => {
         toast({
           title: "Success",
           description: isLiked ? "Like removed!" : "Update liked!",
@@ -87,6 +99,18 @@ const TV = () => {
           </h1>
           <p className="text-muted-foreground">Watch the latest videos and broadcasts</p>
         </div>
+        {category_ids?.map((category_id: any) => {
+            <Select onValueChange={(value) => setSelectedCategory(value)}>
+              <SelectTrigger className="w-[180px] bg-red-400">
+                <SelectValue placeholder="Select Category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={category_id.id}>{category_id?.name}</SelectItem>
+                {/* Add more categories as needed */}
+              </SelectContent>
+            </Select>
+          })}
+
         <div className="">
           {isLoading ? (
             <p className="text-muted-foreground">Loading videos...</p>
