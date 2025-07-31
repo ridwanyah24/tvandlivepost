@@ -10,21 +10,13 @@ import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import { timeSince } from "@/utils/formatDate";
 import { useRouter } from "next/navigation";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const TV = () => {
 
-  const [selectedCategory, setSelectedCategory] = useState<string | undefined>();
-  const { data: mockVideos, isLoading } = useGetAllVideosQuery(selectedCategory ? { category_ids: [parseInt(selectedCategory)] } : {});
-
-  const { data: category_ids } = useGetAllCategoriesQuery();
+  const [selectedCategory, setSelectedCategory] = useState<string >("all");
+  const { data: mockVideos, isLoading } = useGetAllVideosQuery(selectedCategory === "all" ? {}: { category_ids: [parseInt(selectedCategory)] });
+  const { data: category_ids, isLoading: loadingCat } = useGetAllCategoriesQuery();
   const [likeId, setLikeId] = useState<number | null>(null);
   const [isLiked, setIsLiked] = useState(false);
   const [likeVideo] = useGenericMutationMutation();
@@ -89,6 +81,7 @@ const TV = () => {
 
 
   return (
+
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
@@ -99,24 +92,32 @@ const TV = () => {
           </h1>
           <p className="text-muted-foreground">Watch the latest videos and broadcasts</p>
         </div>
-        {category_ids?.map((category_id: any) => {
+        {/* <p>something should be heres</p> */}
+        <div className="mb-10">
+          {!loadingCat ? (
             <Select onValueChange={(value) => setSelectedCategory(value)}>
-              <SelectTrigger className="w-[180px] bg-red-400">
+              <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Select Category" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={category_id.id}>{category_id?.name}</SelectItem>
-                {/* Add more categories as needed */}
+                <SelectItem value={"all"}>All</SelectItem>
+                {category_ids?.map((category_id: any) => (
+                  <SelectItem key={category_id.id} value={category_id.id.toString()}>
+                    {category_id.name}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
-          })}
-
+          ) : (
+            "Loading Categories..."
+          )}
+        </div>
         <div className="">
           {isLoading ? (
             <p className="text-muted-foreground">Loading videos...</p>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {videos?.map((video: any) => (
+              {mockVideos?.map((video: any) => (
                 <VideoCard
                   key={video.id}
                   video={video}

@@ -275,6 +275,15 @@ export const apiSlice = createApi({
                     method: "GET",
                 }
             }
+        }),
+        getSingleUpdate: builder.query<any, Partial<any>>({
+            query: ({id}:{id:string})=> {
+                return {
+                    url: `/updates/${id}`,
+                    method: "GET",
+
+                }
+            }
         })
     }),
 });
@@ -293,4 +302,5 @@ export const {
     useGetSingleVideoQuery,
     useGetVideoCommentsQuery,
     useGetAllCategoriesQuery,
+    useGetSingleUpdateQuery,
 } = apiSlice;
