@@ -6,7 +6,6 @@ import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { RadioIcon, TvIcon, SettingsIcon, MenuIcon, XIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
-import Image from "next/image";
 
 const Navigation = () => {
   const pathname = usePathname();
