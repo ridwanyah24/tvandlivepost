@@ -46,7 +46,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
           </div>
 
           <div className="prose prose-neutral">
-            <p>This is news from blacctheddi posts.</p>
+            <p>{data?.details}</p>
           </div>
         </div>
       </div>
