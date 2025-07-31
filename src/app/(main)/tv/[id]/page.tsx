@@ -23,6 +23,16 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
     const [isLiked, setIsLiked] = useState(false);
     const [likeVideo] = useGenericMutationMutation();
 
+    const [expanded, setExpanded] = useState(false);
+    const maxLength = 100; // Number of characters to show when collapsed
+    const toggleExpanded = () => setExpanded((prev) => !prev);
+    const description = data?.video?.description
+    const isTruncated = description?.length > maxLength;
+    const displayedText = expanded ? description : description?.slice(0, maxLength);
+
+    console.log(description);
+    
+
     const handlePlay = (videoId: string | number) => {
         router.push(`/tv/${videoId}`)
 
@@ -138,7 +148,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
                                     <h2 className="text-2xl font-bold text-foreground mb-4">
                                         {data?.video?.title}
                                     </h2>
-                                    <div className="flex gap-10 flex-col justify-between">
+                                    <div className="flex gap-5 flex-col justify-between">
                                         <div className="flex items-center space-x-4 text-muted-foreground">
                                             <span>{data?.video.views} views</span>
                                             <span>•</span>
@@ -156,6 +166,22 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
                                                 <SendIcon />
                                             </Button>
                                         </div>
+                                        <div className="flex flex-col gap-2">
+                                            <p className="text-lg font-medium">Description</p>
+                                            <p>
+                                                {displayedText}
+                                                {isTruncated && !expanded && "..."}
+                                                {isTruncated && (
+                                                    <button
+                                                        onClick={toggleExpanded}
+                                                        className="text-accent cursor-pointer  ml-1 hover:underline text-sm"
+                                                    >
+                                                        {expanded ? "View less" : "View more"}
+                                                    </button>
+                                                )}
+                                            </p>
+                                        </div>
+
                                         <div className="space-y-2 max-h-40 overflow-y-auto pr-2">
                                             {updateComments?.map((comment: any) => (
                                                 <div

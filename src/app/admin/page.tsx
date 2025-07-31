@@ -15,10 +15,11 @@ import {
   MessageCircleIcon,
   TvIcon,
   RadioIcon,
-  StopCircleIcon
+  StopCircleIcon,
+  Check
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useGenericMutationMutation, useGetAllEventsQuery, useGetAnalyticsQuery, useGetRecentUpdatesQuery, useGetRecentVideosQuery } from "@/slice/requestSlice";
+import { useGenericMutationMutation, useGetAllCategoriesQuery, useGetAllEventsQuery, useGetAnalyticsQuery, useGetRecentUpdatesQuery, useGetRecentVideosQuery } from "@/slice/requestSlice";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -26,6 +27,8 @@ import { useAppSelector } from "@/hooks/redux-hooks";
 import { selectCurrentAdminAccess } from "@/slice/authAdmin";
 import { useRouter } from "next/navigation";
 import { timeSince } from "@/utils/formatDate";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Command, CommandGroup, CommandItem } from "@/components/ui/command"
 
 
 
@@ -64,6 +67,8 @@ const uploadVideoSchema = z.object({
     .refine((file) => file.type.startsWith("video/"), {
       message: "Only video files are allowed",
     }),
+  description: z.string(),
+  category_ids: z.array(z.number()).min(1),
 });
 
 
@@ -72,23 +77,15 @@ const Admin = () => {
   const [createEvent, { isLoading, isError, isSuccess }] = useGenericMutationMutation();
   const [postUpdate, { isLoading: loading, isError: error, isSuccess: success }] = useGenericMutationMutation();
   const [eventId, setEventId] = useState("");
-  const [uploadVideoMutation, { isLoading: loadingVideo, isError: errorVideo, isSuccess: successVideo }] = useGenericMutationMutation();
-
-
+  const [catId, setCatId] = useState<string[]>([])
+  const [uploadVideoMutation] = useGenericMutationMutation();
+  const { data: videoCategories, isLoading: loadingCategories, isError: errorGetCat } = useGetAllCategoriesQuery();
   const [endEvent, { isLoading: endingEvent, isError: errorEVent }] = useGenericMutationMutation();
-
   const { data: activeEvents, isLoading: loadingEvents, isError: eventsError } = useGetAllEventsQuery();
-  const {data:analytics, isLoading:loadingAnalytics, isError: errorAnalytics} = useGetAnalyticsQuery();
- 
-  const {data:recentUpdates, isLoading:loadUpdates, isError:loadError } = useGetRecentUpdatesQuery();
-  console.log(recentUpdates);
-  
-  const {data:recentVideos, isLoading:loadVideos, isError:loadvidError } = useGetRecentVideosQuery();
-  console.log(recentVideos);
-  
-
+  const { data: analytics, isLoading: loadingAnalytics, isError: errorAnalytics } = useGetAnalyticsQuery();
+  const { data: recentUpdates, isLoading: loadUpdates, isError: loadError } = useGetRecentUpdatesQuery();
+  const { data: recentVideos, isLoading: loadVideos, isError: loadvidError } = useGetRecentVideosQuery();
   const accessToken = useAppSelector(selectCurrentAdminAccess);
-  console.log(accessToken);
 
   const router = useRouter();
 
@@ -105,8 +102,6 @@ const Admin = () => {
     }
   }, [accessToken, router, toast]);
 
-  // You can optionally return null or a spinner until redirect completes
-//   if (!accessToken) return null;
 
   const {
     register: registerEvent,
@@ -138,7 +133,7 @@ const Admin = () => {
   } = useForm({
     resolver: zodResolver(uploadVideoSchema),
   });
- 
+
 
   const handleCreateEvent = (data: z.infer<typeof createEventSchema>) => {
     console.log(data);
@@ -200,10 +195,17 @@ const Admin = () => {
   };
 
   const handleUploadVideo = (data: z.infer<typeof uploadVideoSchema>) => {
+    // data && console.log("I'm submitting");
     const formData = new FormData();
     formData.append("title", data.title);
-    formData.append("videoFile", data.video_file.name);
-    if (data.thumbnail) formData.append("thumbnail", data.thumbnail.name);
+    formData.append("video_file", data.video_file);
+    formData.append("description", data.description);
+
+    data.category_ids.forEach((id) => {
+      formData.append("category_ids", String(id));
+    });
+
+    if (data.thumbnail) formData.append("thumbnail", data.thumbnail);
 
     for (const [key, value] of formData.entries()) {
       console.log(key, value);
@@ -365,7 +367,7 @@ const Admin = () => {
                           </option>
                         ))}
                       </select>
-                      {eventId === "" && <p className="text-red-500 text-sm">Event is required</p>}
+                      {updateErrors.title && <p className="text-red-500 text-sm">Event is required</p>}
                     </div>
 
                     <div>
@@ -428,7 +430,7 @@ const Admin = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {(recentUpdates || []).map((update:any) => (
+                    {(recentUpdates || []).map((update: any) => (
                       <div key={update.id} className="p-4 border border-border rounded-lg">
                         <div className="flex items-start justify-between mb-2">
                           <h3 className="font-semibold text-foreground text-sm">{update.title}</h3>
@@ -463,6 +465,65 @@ const Admin = () => {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <form onSubmit={handleSubmitVideo(handleUploadVideo)} className="space-y-4">
+                    <Popover>
+                      <Label htmlFor="category">Choose Video Categories</Label>
+                      <PopoverTrigger
+                        id="category"
+                        className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground text-left"
+                      >
+
+                        {watchVideo("category_ids")?.length > 0
+                          ? `${watchVideo("category_ids").length} selected`
+                          : "Select Video Categories"}
+                      </PopoverTrigger>
+                      <PopoverContent className="w-full p-0">
+                        <Command>
+                          <CommandGroup>
+                            {loadingCategories ? (
+                              <div className="p-4 text-sm text-muted-foreground">
+                                Loading categories...
+                              </div>
+                            ) : (
+                              videoCategories?.map((cat: any) => {
+                                const selected = watchVideo("category_ids")?.includes(cat.id);
+
+                                return (
+                                  <CommandItem
+                                    key={cat.id}
+                                    onSelect={() => {
+                                      const current = watchVideo("category_ids") || [];
+                                      const updated = selected
+                                        ? current.filter((id) => id !== cat.id)
+                                        : [...current, cat.id];
+
+                                      setValueVideo("category_ids", updated, {
+                                        shouldValidate: true,
+                                      });
+                                    }}
+                                  >
+                                    <div className="flex items-center gap-2">
+                                      <span
+                                        className={`w-4 h-4 border border-border rounded-sm flex items-center justify-center ${selected ? "bg-accent text-white" : "bg-background"
+                                          }`}
+                                      >
+                                        {selected && <Check className="w-3 h-3" />}
+                                      </span>
+                                      {cat.name}
+                                    </div>
+                                  </CommandItem>
+                                );
+                              })
+                            )}
+                          </CommandGroup>
+                        </Command>
+                      </PopoverContent>
+                      {videoErrors.category_ids && (
+                        <p className="text-red-500 text-sm mt-1">
+                          {videoErrors.category_ids.message}
+                        </p>
+                      )}
+                    </Popover>
+
                     <div>
                       <Label htmlFor="video-title">Video Title</Label>
                       <Input
@@ -472,6 +533,18 @@ const Admin = () => {
                       />
                       {videoErrors.title && (
                         <p className="text-red-500 text-sm mt-1">{videoErrors.title.message}</p>
+                      )}
+                    </div>
+
+                    <div>
+                      <Label htmlFor="video-description">Video Description</Label>
+                      <Textarea
+                        id="video-description"
+                        placeholder="Enter video Description"
+                        {...registerVideo("description")}
+                      />
+                      {videoErrors.description && (
+                        <p className="text-red-500 text-sm mt-1">{videoErrors.description?.message}</p>
                       )}
                     </div>
 
@@ -507,14 +580,14 @@ const Admin = () => {
                           }
                         }}
                       />
-                      {videoErrors.thumbnail && (
+                      {videoErrors?.thumbnail && (
                         <p className="text-red-500 text-sm mt-1">{videoErrors.thumbnail.message}</p>
                       )}
                     </div>
 
                     <Button
                       type="submit"
-                      className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
+                      className="w-full bg-accent text-accent-foreground hover:bg-accent/90 cursor-pointer"
                     >
                       Upload Video
                     </Button>
@@ -529,7 +602,7 @@ const Admin = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {recentVideos?.map((video:any) => (
+                    {recentVideos?.map((video: any) => (
                       <div key={video.id} className="p-4 border border-border rounded-lg">
                         <div className="flex items-start justify-between mb-2">
                           <h3 className="font-semibold text-foreground text-sm">{video.title}</h3>
@@ -583,7 +656,7 @@ const Admin = () => {
           </TabsContent>
         </Tabs>
       </div>
-    </div>
+    </div >
   );
 };
 

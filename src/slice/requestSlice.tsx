@@ -263,6 +263,14 @@ export const apiSlice = createApi({
             },
             providesTags: ['all-videos']
         }),
+        getAllCategories: builder.query<any, Partial<void>>({
+            query(){
+                return {
+                    url: `/categories`,
+                    method: "GET",
+                }
+            }
+        })
     }),
 });
 
@@ -279,4 +287,5 @@ export const {
     useGetVideoViewsQuery,
     useGetSingleVideoQuery,
     useGetVideoCommentsQuery,
+    useGetAllCategoriesQuery,
 } = apiSlice;
