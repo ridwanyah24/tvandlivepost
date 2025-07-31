@@ -32,7 +32,7 @@ const Navigation = () => {
               <RadioIcon className="w-5 h-5 text-accent-foreground" />
               {/* <Image src="/blacctheddi.jpg" alt="logo" width={50} height={50}/> */}
             </div>
-            <span className="text-xl font-bold text-foreground">Blacctheddi Live Posts and TV</span>
+            <span className="text-xl font-bold text-foreground">Blacctheddi</span>
           </Link>
 
           {/* Desktop Navigation */}
