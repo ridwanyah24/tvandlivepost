@@ -111,7 +111,7 @@ const LiveUpdateCard = ({ update, onLike, onComment }: LiveUpdateCardProps) => {
 
   return (
     <Card className="mb-4 hover:bg-muted/50 transition-colors duration-200 border-border">
-      <CardContent className="p-6">
+      <CardContent className="lg:p-6 p-2">
         <div className="flex items-start justify-between mb-3">
           <h3 className="text-lg font-semibold text-foreground">{update.title}</h3>
           <div className="flex items-center text-muted-foreground text-sm">
@@ -125,7 +125,7 @@ const LiveUpdateCard = ({ update, onLike, onComment }: LiveUpdateCardProps) => {
             <img
               src={update?.image_url}
               alt={update.title}
-              className="w-full h-[400px] object-cover object-center rounded-lg border border-border"
+              className="w-full lg:h-[400px] h-[200px] object-cover object-center rounded-lg border border-border"
             />
           </div>
         )}
