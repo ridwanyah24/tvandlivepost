@@ -39,8 +39,8 @@ const LiveUpdates = () => {
 
 
   useEffect(() => {
-    if (mockEvents && mockEvents.length > 0 ) {
-      setSelectedEvent(mockEvents[0]);
+    if (mockEvents && mockEvents?.length > 0 ) {
+      setSelectedEvent(mockEvents?.slice().reverse()[0]);
     }
   }, [mockEvents]);
 
@@ -251,7 +251,7 @@ const LiveUpdates = () => {
             </h2>
 
             <div className="space-y-4">
-              {mockEvents?.map((event: any) => (
+              {mockEvents?.slice().reverse().map((event: any) => (
                 <Card
                   key={event.id}
                   className={`cursor-pointer transition-all duration-200 hover:shadow-lg ${selectedEvent?.id === event.id
