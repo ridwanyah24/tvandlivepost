@@ -34,9 +34,18 @@ interface LiveUpdateCardProps {
 
 
 const LiveUpdateCard = ({ update, onLike, onComment }: LiveUpdateCardProps) => {
-  const [postComment, { isLoading, isError }] = useGenericMutationMutation();
-  const [likeUpdate, { isLoading: loadingLike, isError: errorLike }] = useGenericMutationMutation();
+  const [postComment] = useGenericMutationMutation();
+  const [likeUpdate] = useGenericMutationMutation();
   const { data: updateComments } = useGetUpdateCommentsQuery({ id: update.id });
+  const [expanded, setExpanded] = useState(false);
+  const maxLength = 20; // Number of characters to show when collapsed
+  const toggleExpanded = () =>{ 
+    // setExpanded((prev) => !prev)
+    router.push(`/${update.id}`)
+  }
+  const description = update?.details
+  const isTruncated = description?.length > maxLength;
+  const displayedText = expanded ? description : description?.slice(0, maxLength);
 
   const [isLiked, setIsLiked] = useState(update.isLiked || false);
   const [isCommenting, setIsCommenting] = useState(false);
@@ -123,7 +132,18 @@ const LiveUpdateCard = ({ update, onLike, onComment }: LiveUpdateCardProps) => {
           </div>
         </div>
 
-        <p className="text-muted-foreground mb-4 leading-relaxed">{update.details}</p>
+        <p className="text-muted-foreground mb-4 leading-relaxed">
+          {displayedText}
+          {isTruncated && !expanded && "..."}
+          {isTruncated && (
+            <button
+              onClick={toggleExpanded}
+              className="text-accent cursor-pointer  ml-1 hover:underline text-sm"
+            >
+              {expanded ? "View less" : "View more"}
+            </button>
+          )}
+        </p>
         <div className="flex items-center space-x-4">
           <Button
             variant="ghost"
@@ -170,7 +190,7 @@ const LiveUpdateCard = ({ update, onLike, onComment }: LiveUpdateCardProps) => {
                 className="border border-border p-2 rounded-md text-sm bg-muted flex flex-col gap-2 overflow-auto max-h-[100px]"
               >
                 <span className="font-medium text-foreground">{updateComments?.slice().reverse()[0]?.content}</span>{" "}
-                <span className="text-muted-foreground">{updateComments[0] ? timeSince(updateComments?.slice().reverse()[0]?.timestamp)  : "no comments"}</span>
+                <span className="text-muted-foreground">{updateComments[0] ? timeSince(updateComments?.slice().reverse()[0]?.timestamp) : "no comments"}</span>
               </div>
 
             </div>

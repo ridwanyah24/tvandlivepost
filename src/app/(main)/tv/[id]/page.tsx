@@ -33,7 +33,6 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
     const handlePlay = (videoId: string | number) => {
         router.push(`/tv/${videoId}`)
     };
-
     const handleAddComment = () => {
         if (newComment.trim()) {
             postComment({

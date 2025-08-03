@@ -125,7 +125,8 @@ const LiveUpdates = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 space-y-10">
+        <h1 className="lg:text-2xl text-lg font-semibold capitalize">Most recent Live Post</h1>
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
 
           {/* Main Content */}

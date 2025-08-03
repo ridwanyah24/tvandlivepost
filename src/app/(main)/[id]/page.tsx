@@ -15,17 +15,8 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const { data:singleUpdate, isLoading, error } = useGetSingleUpdateQuery({ id });
   const [postComment, { isLoading: loadingComment, isError }] = useGenericMutationMutation();
-  // const [likeUpdate, { isLoading: loadingLike, isError: errorLike }] = useGenericMutationMutation();
   const { data: updateComments } = useGetUpdateCommentsQuery({ id: id });
-  const [expanded, setExpanded] = useState(false);
-  const toggleExpanded = () => setExpanded((prev) => !prev);
-  const maxLength = 100;
-  const description = singleUpdate?.details
-  const isTruncated = description?.length > maxLength;
-  const displayedText = expanded ? description : description?.slice(0, maxLength);
-  // const [likeId, setLikeId] = useState<number | null>(null);
-  // const router = useRouter();
-  // const [isLiked, setIsLiked] = useState(false);
+ 
   const [isCommenting, setIsCommenting] = useState(true);
   const [newComment, setNewComment] = useState("");
 
@@ -70,17 +61,17 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
         </p>
 
         {image_url && (
-          <div className="w-full h-64 relative mb-6 rounded-lg overflow-hidden">
+          <div className="w-full max-h-[500px] h-[500px] relative mb-6 rounded-lg overflow-hidden">
             <Image
               src={singleUpdate?.image_url}
               alt={title}
               fill
-              className="object-cover"
+              className="object-fit"
             />
           </div>
         )}
 
-        <div className="space-y-4">
+        <div className="space-y-4 mb-5">
           {/* <div>
             <p className="text-sm text-muted-foreground">Related Event:</p>
             <p className="text-lg font-medium">{event?.title}</p>
@@ -88,18 +79,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
           </div> */}
 
           <div className="prose prose-neutral">
-            <p>
-              {displayedText}
-              {isTruncated && !expanded && "..."}
-              {isTruncated && (
-                <button
-                  onClick={toggleExpanded}
-                  className="text-accent cursor-pointer  ml-1 hover:underline text-sm"
-                >
-                  {expanded ? "View less" : "View more"}
-                </button>
-              )}
-            </p>
+            <p>{singleUpdate?.details}</p>
           </div>
         </div>
         {isCommenting && (
