@@ -34,7 +34,14 @@ import { Command, CommandGroup, CommandItem } from "@/components/ui/command"
 
 const createEventSchema = z.object({
   title: z.string().min(1, "Event title is required"),
-  description: z.string().optional()
+  description: z.string(),
+  image_file: z
+    .custom<File | undefined>((file) => file === undefined || file instanceof File, {
+      message: "I am the trouble",
+    }).optional()
+    .refine((file) => file === undefined || file.size > 0, {
+      message: "Image file is required",
+    })
 });
 
 const updateSchema = z.object({
@@ -78,7 +85,7 @@ const Admin = () => {
   const [postUpdate, { isLoading: loading, isError: error, isSuccess: success }] = useGenericMutationMutation();
   const [eventId, setEventId] = useState("");
   const [catId, setCatId] = useState<string[]>([])
-  const [uploadVideoMutation] = useGenericMutationMutation();
+  const [uploadVideoMutation, {isLoading: loadingVideos}] = useGenericMutationMutation();
   const { data: videoCategories, isLoading: loadingCategories, isError: errorGetCat } = useGetAllCategoriesQuery();
   const [endEvent, { isLoading: endingEvent, isError: errorEVent }] = useGenericMutationMutation();
   const { data: activeEvents, isLoading: loadingEvents, isError: eventsError } = useGetAllEventsQuery();
@@ -107,6 +114,7 @@ const Admin = () => {
     register: registerEvent,
     handleSubmit: handleSubmitEvent,
     reset: resetEventForm,
+    setValue: setEventValue,
     formState: { errors: eventErrors },
   } = useForm({
     resolver: zodResolver(createEventSchema),
@@ -136,11 +144,20 @@ const Admin = () => {
 
 
   const handleCreateEvent = (data: z.infer<typeof createEventSchema>) => {
+
+    const formData = new FormData();
+    // Append the update object as a JSON string
+    formData.append("title", data.title);
+    formData.append("details", data.description);
+    if (data.image_file) {
+      formData.append("image_file", data.image_file);
+    }
+
     console.log(data);
     createEvent({
       url: '/admin/events',
       method: "POST",
-      body: data,
+      body: formData,
       invalidatesTags: [{ type: "events" }]
     })
       .unwrap()
@@ -179,6 +196,7 @@ const Admin = () => {
       url: `/admin/events/${eventId}/updates`,
       method: "POST",
       body: formData,
+      invalidatesTags: [{type: "updates"}]
     }).unwrap().then(() => {
       toast({
         title: "Success",
@@ -265,19 +283,19 @@ const Admin = () => {
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="events" className="flex items-center space-x-2 cursor-pointer">
               <RadioIcon className="w-4 h-4" />
-              <span>Events</span>
+              <span>Add Blog</span>
             </TabsTrigger>
             <TabsTrigger value="updates" className="flex items-center space-x-2 cursor-pointer">
               <PlusIcon className="w-4 h-4" />
-              <span>Updates</span>
+              <span>Live Updates</span>
             </TabsTrigger>
             <TabsTrigger value="videos" className="flex items-center space-x-2 cursor-pointer">
               <TvIcon className="w-4 h-4" />
-              <span>Videos</span>
+              <span>Post Videos</span>
             </TabsTrigger>
             <TabsTrigger value="analytics" className="flex items-center space-x-2 cursor-pointer">
               <EyeIcon className="w-4 h-4" />
-              <span>Analytics</span>
+              <span>View Analytics</span>
             </TabsTrigger>
           </TabsList>
 
@@ -287,20 +305,37 @@ const Admin = () => {
               {/* Create Event */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Create New Event</CardTitle>
+                  <CardTitle>Add New Blog Post</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <form onSubmit={handleSubmitEvent(handleCreateEvent)} className="space-y-4">
                     <div>
-                      <Label htmlFor="event-title">Event Title</Label>
-                      <Input id="event-title" {...registerEvent("title")} />
+                      <Label htmlFor="event-title">Heading</Label>
+                      <Input id="event-title" {...registerEvent("title")} className="" />
                       {eventErrors.title && <p className="text-sm text-red-500">{eventErrors.title.message}</p>}
                     </div>
                     <div>
-                      <Label htmlFor="event-description">Description</Label>
+                      <Label htmlFor="event-description">Body</Label>
                       <Textarea id="event-description" {...registerEvent("description")} />
                     </div>
-                    <Button type="submit" className="cursor-pointer hover:bg-accent" disabled={isLoading}>Create Event</Button>
+                    <div>
+                      <Label htmlFor="image_file">Cover Image</Label>
+                      <Input
+                        id="image_file"
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            setEventValue("image_file", file, { shouldValidate: true });
+                          }
+                        }}
+                      />
+                      {eventErrors.image_file && (
+                        <p className="text-red-500 text-sm">{eventErrors.image_file.message}</p>
+                      )}
+                    </div>
+                    <Button type="submit" className="cursor-pointer hover:bg-accent" disabled={isLoading}>Post Blog</Button>
                   </form>
                 </CardContent>
               </Card>
@@ -308,12 +343,12 @@ const Admin = () => {
               {/* Active Events */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Active Events</CardTitle>
+                  <CardTitle>Active Blogs</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
                     {activeEvents?.map((event: any) => (
-                      <div key={event.id} className="flex items-center justify-between p-4 border border-border rounded-lg">
+                      <div key={event.id} className="flex cursor-pointer items-center justify-between p-4 border border-border rounded-lg" onClick={() => router.push("/")}>
                         <div>
                           <h3 className="font-semibold text-foreground">{event.title}</h3>
                           <div className="flex items-center space-x-4 text-sm text-muted-foreground">
@@ -353,14 +388,14 @@ const Admin = () => {
                 <CardContent >
                   <form onSubmit={handleSubmitUpdate(handleCreateUpdate)} className="space-y-4">
                     <div>
-                      <Label htmlFor="eventId">Select Event</Label>
+                      <Label htmlFor="eventId">Select Blog Post</Label>
                       <select
                         id="eventId"
                         // {...registerUpdate("eventId", { required: true })}
                         onChange={(e) => { setEventId(e.target.value) }}
                         className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent"
                       >
-                        <option value="">Choose an event...</option>
+                        <option value="">Choose a Live Post...</option>
                         {activeEvents?.map((event: any) => (
                           <option key={event.id} value={event.id}>
                             {event.title}
@@ -371,7 +406,7 @@ const Admin = () => {
                     </div>
 
                     <div>
-                      <Label htmlFor="update.title">Update Title</Label>
+                      <Label htmlFor="update.title">Title of the Update</Label>
                       <Input
                         id="update.title"
                         {...registerUpdate("title")}
@@ -431,7 +466,7 @@ const Admin = () => {
                 <CardContent>
                   <div className="space-y-4">
                     {(recentUpdates || []).map((update: any) => (
-                      <div key={update.id} className="p-4 border border-border rounded-lg">
+                      <div key={update.id} className="p-4 border border-border rounded-lg cursor-pointer" onClick={()=>router.push(`/${update.id}`)}>
                         <div className="flex items-start justify-between mb-2">
                           <h3 className="font-semibold text-foreground text-sm">{update.title}</h3>
                           <span className="text-xs text-muted-foreground">{timeSince(update.timestamp)}</span>
@@ -587,9 +622,11 @@ const Admin = () => {
 
                     <Button
                       type="submit"
+                      disabled={loadingVideos}
                       className="w-full bg-accent text-accent-foreground hover:bg-accent/90 cursor-pointer"
                     >
-                      Upload Video
+                      {/* Upload Video */}
+                      {loadingVideos ? "Posting Video" : "Upload Video"}
                     </Button>
                   </form>
                 </CardContent>

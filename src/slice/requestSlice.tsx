@@ -149,7 +149,8 @@ export type ValidTags =
     | "videos"
     | "event-updates"
     | "update-comments"
-    | "all-videos";
+    | "all-videos"
+    | "singleEvent";
 type MutationArg = {
     /** The URL for the request */
     url: string;
@@ -170,7 +171,7 @@ type MutationArg = {
 export const apiSlice = createApi({
     reducerPath: "api",
     baseQuery: baseQueryWithReauth,
-    tagTypes: ["all-videos", "loggedIn", "events", "analytics", "updates", "videos", "event-updates", "update-comments"] as readonly ValidTags[],
+    tagTypes: ["all-videos", "loggedIn", "singleEvent", "events", "analytics", "updates", "videos", "event-updates", "update-comments"] as readonly ValidTags[],
     endpoints: (builder) => ({
         genericMutation: builder.mutation<
             any,
@@ -277,14 +278,32 @@ export const apiSlice = createApi({
             }
         }),
         getSingleUpdate: builder.query<any, Partial<any>>({
-            query: ({id}:{id:string})=> {
+            query: ({ id }: { id: string }) => {
                 return {
                     url: `/updates/${id}`,
                     method: "GET",
 
                 }
             }
-        })
+        }),
+        getSingleEvent: builder.query<any, Partial<any>>({
+            query: ({ id }: { id: string }) => {
+                return {
+                    url: `/events/${id}`,
+                    method: "GET",
+                }
+            },
+            providesTags: ["singleEvent"]
+        }),
+        getEventComments: builder.query<any, Partial<any>>({
+            query: ({ id }: { id: string }) => {
+                return {
+                    url: `/events/${id}/comments`,
+                    method: "GET",
+                }
+            },
+            providesTags: ["singleEvent"]
+        }),
     }),
 });
 
@@ -303,4 +322,6 @@ export const {
     useGetVideoCommentsQuery,
     useGetAllCategoriesQuery,
     useGetSingleUpdateQuery,
+    useGetSingleEventQuery,
+    useGetEventCommentsQuery,
 } = apiSlice;

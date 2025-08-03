@@ -58,10 +58,6 @@ const LiveUpdateCard = ({ update, onLike, onComment }: LiveUpdateCardProps) => {
     })
       .unwrap()
       .then((res) => {
-        toast({
-          title: "Success",
-          description: isLiked ? "Like removed!" : "Update liked!",
-        });
 
         if (!isLiked && res?.id) {
           setLikeId(res.id); // Store like_id for potential unlike
@@ -95,10 +91,6 @@ const LiveUpdateCard = ({ update, onLike, onComment }: LiveUpdateCardProps) => {
         },
         invalidatesTags: [{ type: "update-comments" }]
       }).unwrap().then(() => {
-        toast({
-          title: "Success",
-          description: "You posted a comment!",
-        });
       }).catch((error) => {
         toast({
           title: "Error",
@@ -113,6 +105,16 @@ const LiveUpdateCard = ({ update, onLike, onComment }: LiveUpdateCardProps) => {
   return (
     <Card className="mb-4 hover:bg-muted/50 transition-colors duration-200 border-border" >
       <CardContent className="lg:p-6 p-2">
+
+        {update.image_url && (
+          <div className="mb-4 cursor-pointer" onClick={() => { router.push(`/${update.id}`) }}>
+            <img
+              src={update?.image_url}
+              alt={update.title}
+              className="w-full lg:h-[400px] h-[200px] object-cover object-center rounded-lg border border-border"
+            />
+          </div>
+        )}
         <div className="flex items-start justify-between mb-3">
           <h3 className="text-lg font-semibold text-foreground">{update.title}</h3>
           <div className="flex items-center text-muted-foreground text-sm">
@@ -121,15 +123,6 @@ const LiveUpdateCard = ({ update, onLike, onComment }: LiveUpdateCardProps) => {
           </div>
         </div>
 
-        {update.image_url && (
-          <div className="mb-4 cursor-pointer" onClick={()=>{router.push(`/${update.id}`)}}>
-            <img
-              src={update?.image_url}
-              alt={update.title}
-              className="w-full lg:h-[400px] h-[200px] object-cover object-center rounded-lg border border-border"
-            />
-          </div>
-        )}
         <p className="text-muted-foreground mb-4 leading-relaxed">{update.details}</p>
         <div className="flex items-center space-x-4">
           <Button
@@ -171,15 +164,15 @@ const LiveUpdateCard = ({ update, onLike, onComment }: LiveUpdateCardProps) => {
 
             {/* Display past comments */}
             <div className="space-y-2 max-h-40 overflow-y-auto pr-2">
-              {updateComments?.map((comment: any) => (
-                <div
-                  key={comment.id}
-                  className="border border-border p-2 rounded-md text-sm bg-muted flex flex-col gap-2 overflow-auto max-h-[100px]"
-                >
-                  <span className="font-medium text-foreground">{comment.content}</span>{" "}
-                  <span className="text-muted-foreground">{timeSince(comment.timestamp)}</span>
-                </div>
-              ))}
+
+              <div
+                key={updateComments?.slice().reverse()[0]?.id}
+                className="border border-border p-2 rounded-md text-sm bg-muted flex flex-col gap-2 overflow-auto max-h-[100px]"
+              >
+                <span className="font-medium text-foreground">{updateComments?.slice().reverse()[0]?.content}</span>{" "}
+                <span className="text-muted-foreground">{updateComments[0] ? timeSince(updateComments?.slice().reverse()[0]?.timestamp)  : "no comments"}</span>
+              </div>
+
             </div>
           </div>
         )}

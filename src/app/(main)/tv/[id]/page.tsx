@@ -28,13 +28,10 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
     const description = data?.video?.description
     const isTruncated = description?.length > maxLength;
     const displayedText = expanded ? description : description?.slice(0, maxLength);
-
-    // console.log(description);
     
-
+    
     const handlePlay = (videoId: string | number) => {
         router.push(`/tv/${videoId}`)
-
     };
 
     const handleAddComment = () => {
@@ -103,8 +100,6 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
                 });
             });
     };
-
-
 
     return (
         <>
