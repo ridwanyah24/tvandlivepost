@@ -4,13 +4,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import LiveUpdateCard from "@/components/LiveUpdateCard";
-import { RadioIcon, ClockIcon, UsersIcon, MessageCircleIcon, HeartIcon, SendIcon } from "lucide-react";
-import { useGenericMutationMutation, useGetAllEventsQuery, useGetEventCommentsQuery, useGetEventUpdatesQuery, useGetSingleEventQuery } from "@/slice/requestSlice";
+import { RadioIcon, ClockIcon, UsersIcon, MessageCircleIcon, HeartIcon, SendIcon, TrendingUpIcon } from "lucide-react";
+import { useGenericMutationMutation, useGetAllEventsQuery, useGetEventCommentsQuery, useGetEventUpdatesQuery, useGetRecentVideosQuery, useGetSingleEventQuery } from "@/slice/requestSlice";
 import { skipToken } from "@reduxjs/toolkit/query";
 import { useRouter } from "next/navigation";
 import { toast } from "@/hooks/use-toast";
 import { timeSince } from "@/utils/formatDate";
 import { Input } from "../ui/input";
+import VideoCard from "../VideoCard";
 
 
 const LiveUpdates = () => {
@@ -18,15 +19,18 @@ const LiveUpdates = () => {
   const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
   const [loadedUpdates, setLoadedUpdates] = useState<any[]>([]);
   const [likeUpdate] = useGenericMutationMutation();
+  const [likeVideo] = useGenericMutationMutation();
   const [newComment, setNewComment] = useState("");
   const [postComment] = useGenericMutationMutation();
   const { data: eventComments } = useGetEventCommentsQuery({ id: selectedEvent?.id })
+  const { data } = useGetRecentVideosQuery();
   const [offset, setOffset] = useState(0);
   const limit = 2; // how many per page
   const maxUpdates = 5;
   const [likeId, setLikeId] = useState<number | null>(null);
   const [isLiked, setIsLiked] = useState(false);
-  const { data: getSingleEvent } = useGetSingleEventQuery({ id: selectedEvent?.id })
+  const [isVideoLiked, setIsVideoLiked] = useState(false);
+  const router = useRouter()
   const {
     data: mockUpdates,
     isLoading: loading,
@@ -131,6 +135,9 @@ const LiveUpdates = () => {
     }
   };
 
+  const handlePlay = (videoId: string | number) => {
+    router.push(`/tv/${videoId}`)
+  };
 
   const handleLoadMore = () => {
     if (loadedUpdates.length < maxUpdates) {
@@ -138,6 +145,33 @@ const LiveUpdates = () => {
     }
   };
 
+  const handleLikeVideo = (id: number) => {
+    if (!id) return;
+    const method = isVideoLiked ? "DELETE" : "POST";
+    const url = isVideoLiked ? `/likes/${likeId}` : `/tvs/${id}/likes`;
+    
+    likeVideo({
+      url,
+      method,
+      invalidatesTags: [{ type: "all-videos" }],
+    }).unwrap()
+      .then((res) => {
+
+        if (!isVideoLiked && res?.id) {
+          setLikeId(res.id); // Store like_id for potential unlike
+        } else if (isVideoLiked) {
+          setLikeId(null); // Reset like_id after deletion
+        }
+        setIsLiked(!isVideoLiked);
+      })
+      .catch((error) => {
+        toast({
+          title: "Error",
+          description: error?.data?.message || "Failed to toggle like.",
+          variant: "destructive",
+        });
+      });
+  };
 
   const handleComment = (updateId: string) => {
     console.log("Open comments for update:", updateId);
@@ -303,6 +337,23 @@ const LiveUpdates = () => {
                   </CardContent>
                 </Card>
               ))}
+            </div>
+            <div className="lg:col-span-1 mt-5">
+              <h3 className="text-xl font-semibold text-foreground mb-4 flex items-center">
+                <TrendingUpIcon className="w-5 h-5 mr-2 text-accent" />
+                Related Videos
+              </h3>
+              <div className="space-y-4">
+                {data?.map((video: any) => (
+                  <VideoCard
+                    key={video.id}
+                    video={video}
+                    onPlay={handlePlay}
+                    onLike={handleLikeVideo}
+                    size="large"
+                  />
+                ))}
+              </div>
             </div>
           </div>
         </div>

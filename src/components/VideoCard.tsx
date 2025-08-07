@@ -20,13 +20,11 @@ interface VideoCardProps {
   video: Video;
   onPlay: (id: string | number) => void;
   onLike: (id: number) => void;
-  onComment: (id: string | number) => void;
+  onComment?: (id: string | number) => void;
   size?: "small" | "large";
 }
 
 const VideoCard = ({ video, onPlay, onLike, onComment, size = "large" }: VideoCardProps) => {
-
-  const router = useRouter();
   
   const {data:videoViews} = useGetVideoViewsQuery({id:video.id})
   const [isLiked, setIsLiked] = useState(video.isLiked || false);
@@ -103,7 +101,7 @@ const VideoCard = ({ video, onPlay, onLike, onComment, size = "large" }: VideoCa
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => onComment(video.id)}
+              // onClick={() => onComment(video.id)}
               className="flex items-center space-x-1 text-muted-foreground hover:bg-[#222222]"
             >
               <MessageCircleIcon className="w-4 h-4" />

@@ -33,6 +33,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
     const handlePlay = (videoId: string | number) => {
         router.push(`/tv/${videoId}`)
     };
+
     const handleAddComment = () => {
         if (newComment.trim()) {
             postComment({
@@ -45,10 +46,10 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
             })
                 .unwrap()
                 .then(() => {
-                    toast({
-                        title: "Success",
-                        description: "You posted a comment!",
-                    });
+                    // toast({
+                    //     title: "Success",
+                    //     description: "You posted a comment!",
+                    // });
                 })
                 .catch((error) => {
                     toast({
@@ -77,17 +78,15 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
             invalidatesTags: [{ type: "all-videos" }],
         }).unwrap()
             .then((res) => {
-                toast({
-                    title: "Success",
-                    description: isLiked ? "Like removed!" : "Update liked!",
-                });
-
+                // toast({
+                //     title: "Success",
+                //     description: isLiked ? "Like removed!" : "Update liked!",
+                // });
                 if (!isLiked && res?.id) {
                     setLikeId(res.id); // Store like_id for potential unlike
                 } else if (isLiked) {
                     setLikeId(null); // Reset like_id after deletion
                 }
-
                 setIsLiked(!isLiked);
                 // onLike(update.id); // Notify parent or analytics
             })
