@@ -50,7 +50,7 @@ const LiveUpdates = () => {
       setLoadedUpdates([]);
     }
   }, [selectedEvent?.id]);
-  
+
   useEffect(() => {
     if (mockUpdates?.length) {
       setLoadedUpdates((prev) => {
@@ -146,7 +146,7 @@ const LiveUpdates = () => {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8 space-y-10">
-        <h1 className="lg:text-2xl text-lg font-semibold capitalize">Most recent Live Post</h1>
+        <h1 className="lg:text-2xl text-lg font-semibold capitalize">Live Blog</h1>
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
 
           {/* Main Content */}
@@ -265,9 +265,9 @@ const LiveUpdates = () => {
 
           {/* Sidebar */}
           <div className="lg:col-span-1">
-            <h2 className="text-2xl font-bold text-foreground mb-6 flex items-center">
+            <h2 className="text-xl font-semibold text-foreground mb-6 flex items-center">
               <RadioIcon className="w-6 h-6 mr-2 text-accent" />
-              Live Blogs
+              Recent Live Blogs
             </h2>
 
             <div className="space-y-4">
@@ -282,19 +282,24 @@ const LiveUpdates = () => {
                 >
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between mb-2">
-                      <h3 className="font-semibold text-foreground text-sm">{event.title}</h3>
                       <Badge variant="destructive" className="bg-accent text-accent-foreground animate-pulse">
                         LIVE
                       </Badge>
-                    </div>
-
-                    <div className="flex items-center justify-between text-xs text-muted-foreground">
-                      <div className="flex items-center">
-                        <ClockIcon className="w-3 h-3 mr-1" />
-                        {event.updates.length} updates
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <div className="flex items-center">
+                          <ClockIcon className="w-3 h-3 mr-1" />
+                          {event.updates.length} updates
+                        </div>
                       </div>
-
                     </div>
+                    <div className="mb-4" >
+                      <img
+                        src={event?.image_url}
+                        alt={event?.title}
+                        className="w-full lg:h-[200px] h-[200px] object-cover object-center rounded-lg border border-border"
+                      />
+                    </div>
+                    <h3 className="font-semibold text-foreground text-sm">{event.title}</h3>
                   </CardContent>
                 </Card>
               ))}
