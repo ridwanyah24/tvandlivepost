@@ -191,7 +191,7 @@ export const apiSlice = createApi({
                     method: "GET"
                 };
             },
-            providesTags: ['events']
+            providesTags: ['events', 'singleEvent']
         }),
         getAnalytics: builder.query<any, Partial<void>>({
             query() {

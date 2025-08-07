@@ -39,18 +39,18 @@ const LiveUpdates = () => {
 
 
   useEffect(() => {
-    if (mockEvents && mockEvents?.length > 0 ) {
+    if (mockEvents && mockEvents?.length > 0) {
       setSelectedEvent(mockEvents?.slice().reverse()[0]);
     }
   }, [mockEvents]);
 
   useEffect(() => {
-    if (selectedEvent) {
+    if (selectedEvent?.id) {
       setOffset(0);
-      setLoadedUpdates([]); // reset updates when event changes
+      setLoadedUpdates([]);
     }
-  }, [selectedEvent]);
-
+  }, [selectedEvent?.id]);
+  
   useEffect(() => {
     if (mockUpdates?.length) {
       setLoadedUpdates((prev) => {
@@ -72,12 +72,22 @@ const LiveUpdates = () => {
     })
       .unwrap()
       .then((res) => {
+        // Update local like count
+        const updatedLikes = isLiked
+          ? selectedEvent.likes.filter((like: any) => like.id !== likeId)
+          : [...selectedEvent.likes, { id: res.id }];
+
+        setSelectedEvent((prev: any) => ({
+          ...prev,
+          likes: updatedLikes,
+        }));
 
         if (!isLiked && res?.id) {
-          setLikeId(res.id); // Store like_id for potential unlike
+          setLikeId(res.id);
         } else if (isLiked) {
-          setLikeId(null); // Reset like_id after deletion
+          setLikeId(null);
         }
+
         setIsLiked(!isLiked);
       })
       .catch((error) => {
@@ -89,6 +99,7 @@ const LiveUpdates = () => {
       });
   };
 
+
   const handleAddComment = () => {
     if (newComment.trim()) {
       postComment({
@@ -98,9 +109,18 @@ const LiveUpdates = () => {
           content: newComment.trim()
         },
         invalidatesTags: [{ type: "singleEvent" }, { type: "event-updates" }]
-      }).unwrap().then(() => {
-        // setSelectedEvent(getSingleEvent);
-        // refetchUpdates();
+      }).unwrap().then((res) => {
+        // Append new comment locally
+        const newCommentObj = {
+          id: res.id || Date.now(), // fallback if no id returned
+          content: newComment.trim(),
+          timestamp: new Date().toISOString(),
+        };
+        setSelectedEvent((prev: any) => ({
+          ...prev,
+          comments: [...prev.comments, newCommentObj],
+        }));
+        setNewComment("");
       }).catch((error) => {
         toast({
           title: "Error",
@@ -108,9 +128,9 @@ const LiveUpdates = () => {
           variant: "destructive",
         });
       });
-      setNewComment("");
     }
   };
+
 
   const handleLoadMore = () => {
     if (loadedUpdates.length < maxUpdates) {
