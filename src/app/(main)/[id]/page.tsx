@@ -19,6 +19,8 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
   const { data: updateComments } = useGetUpdateCommentsQuery({ id });
   const [postComment] = useGenericMutationMutation();
   const { data: updateEvent } = useGetSingleEventQuery({ id: singleUpdate?.event_id });
+  const [open, setOpen] = useState(false);
+  const [showFull, setShowFull] = useState(false);
 
   const [newComment, setNewComment] = useState("");
   const [isCommenting, setIsCommenting] = useState(true);
@@ -106,13 +108,41 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
             </div>
 
             {/* Event Preview Moved Below Main Update */}
-            {updateEvent && (
-              <div className="mt-10 p-4 border rounded-md bg-muted">
-                <h2 className="text-xl font-semibold mb-2">{updateEvent.title}</h2>
-                <p className="text-sm text-muted-foreground">{format(new Date(updateEvent.timestamp), "PPPpp")}</p>
-                <p className="mt-2 text-sm">{updateEvent.details}</p>
+            {updateEvent &&
+              <div className="mt-10 flex flex-col  gap-4">
+                {/* Image Section */}
+                {updateEvent.image_url && (
+                  <div className="w-full md:h-auto overflow-hidden rounded-md">
+                    <img
+                      src={updateEvent.image_url}
+                      alt={updateEvent.title}
+                      width={300}
+                      height={100}
+                      className="w-full h-[400px]"
+                    />
+                  </div>
+                )}
+
+                {/* Text Section */}
+                <div className="flex-1">
+                  <h2 className="text-xl font-semibold mb-2">{updateEvent.title}</h2>
+                  <p className="text-sm text-muted-foreground">
+                    {format(new Date(updateEvent.timestamp), "PPPpp")}
+                  </p>
+
+                  {/* Description with toggle */}
+                  <p className={`mt-2 text-sm ${showFull ? "" : "line-clamp-3"}`}>
+                    {updateEvent.details}
+                  </p>
+                  <button
+                    onClick={() => setShowFull(!showFull)}
+                    className="text-blue-600 text-sm font-medium mt-1 hover:underline"
+                  >
+                    {showFull ? "Show less" : "Read more"}
+                  </button>
+                </div>
               </div>
-            )}
+            }
 
             {/* Comments */}
             {isCommenting && (
@@ -162,7 +192,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
                     />
                   )}
                   <div className="flex items-center gap-2 text-xs mb-1">
-                    
+
                     <span className="text-muted-foreground">
                       {update.comments?.length || 0} updates
                     </span>
