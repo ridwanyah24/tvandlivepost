@@ -1,9 +1,9 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useState, useMemo } from "react";
 import Image from "next/image";
 import { format } from "date-fns";
-import { useGenericMutationMutation, useGetSingleUpdateQuery, useGetUpdateCommentsQuery } from "@/slice/requestSlice";
+import { useGenericMutationMutation, useGetSingleEventQuery, useGetSingleUpdateQuery, useGetUpdateCommentsQuery } from "@/slice/requestSlice";
 import { timeSince } from "@/utils/formatDate";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
@@ -13,103 +13,171 @@ import { toast } from "@/components/ui/use-toast";
 
 export default function Page({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const { data:singleUpdate, isLoading, error } = useGetSingleUpdateQuery({ id });
-  const [postComment, { isLoading: loadingComment, isError }] = useGenericMutationMutation();
-  const { data: updateComments } = useGetUpdateCommentsQuery({ id: id });
- 
-  const [isCommenting, setIsCommenting] = useState(true);
+  const router = useRouter();
+
+  const { data: singleUpdate, isLoading, error } = useGetSingleUpdateQuery({ id });
+  const { data: updateComments } = useGetUpdateCommentsQuery({ id });
+  const [postComment] = useGenericMutationMutation();
+  const { data: updateEvent } = useGetSingleEventQuery({ id: singleUpdate?.event_id });
+
   const [newComment, setNewComment] = useState("");
+  const [isCommenting, setIsCommenting] = useState(true);
+
+  const relatedUpdates = useMemo(() => {
+    if (!updateEvent?.updates) return [];
+    return [...updateEvent.updates].sort(
+      (a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    );
+  }, [updateEvent]);
 
 
-  if (isLoading) return <p className="p-4"></p>;
-  if (error || !singleUpdate) return <p className="p-4">Update not found.</p>;
+  const currentIndex = useMemo(() => {
+    return relatedUpdates?.findIndex((update: any) => update.id === singleUpdate?.id);
+  }, [relatedUpdates, singleUpdate]);
 
-  const {
-    title,
-    timestamp,
-    image_url,
-    event,
-  } = singleUpdate;
+  const prevUpdate = relatedUpdates[currentIndex - 1];
+  const nextUpdate = relatedUpdates[currentIndex + 1];
 
   const handleAddComment = () => {
     if (newComment.trim()) {
       postComment({
         url: `/updates/${id}/comments`,
         method: "POST",
-        body: {
-          content: newComment.trim()
-        },
-        invalidatesTags: [{ type: "update-comments" }]
-      }).unwrap().then(() => {
-      }).catch((error) => {
-        toast({
-          title: "Error",
-          description: error?.data?.message || "Failed to post comment.",
-          variant: "destructive",
+        body: { content: newComment.trim() },
+        invalidatesTags: [{ type: "update-comments" }],
+      }).unwrap()
+        .catch((error) => {
+          toast({
+            title: "Error",
+            description: error?.data?.message || "Failed to post comment.",
+            variant: "destructive",
+          });
         });
-      });
       setNewComment("");
     }
   };
 
+  if (isLoading) return <p className="p-4"></p>;
+  if (error || !singleUpdate) return <p className="p-4"></p>;
+
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8 max-w-3xl">
-        <h1 className="text-4xl font-bold mb-10">{title}</h1>
-        <p className="text-muted-foreground mb-10">
-          Posted on: {format(new Date(timestamp), "PPPpp")}
-        </p>
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex flex-col lg:flex-row gap-8">
 
-        {image_url && (
-          <div className="w-full max-h-[500px] h-[500px] relative mb-6 rounded-lg overflow-hidden">
-            <Image
-              src={singleUpdate?.image_url}
-              alt={title}
-              fill
-              className="object-fit"
-            />
-          </div>
-        )}
+          {/* Left Column: Main Update */}
+          <div className="w-full lg:w-2/3">
+            <h1 className="text-4xl font-bold mb-4">{singleUpdate.title}</h1>
+            <p className="text-muted-foreground mb-6">
+              Posted on: {format(new Date(singleUpdate.timestamp), "PPPpp")}
+            </p>
 
-        <div className="space-y-4 mb-5">
-          {/* <div>
-            <p className="text-sm text-muted-foreground">Related Event:</p>
-            <p className="text-lg font-medium">{event?.title}</p>
-            <p className="text-sm">Status: {event?.status}</p>
-          </div> */}
+            {singleUpdate.image_url && (
+              <div className="w-full h-[500px] relative mb-6 rounded-lg overflow-hidden">
+                <Image
+                  src={singleUpdate.image_url}
+                  alt={singleUpdate.title}
+                  fill
+                  className="object-cover"
+                />
+              </div>
+            )}
 
-          <div className="prose prose-neutral">
-            <p>{singleUpdate?.details}</p>
-          </div>
-        </div>
-        {isCommenting && (
-          <div className="mt-4 space-y-3 border-t border-border pt-4">
-            {/* Comment input */}
-            <div className="flex gap-2 items-center">
-              <Input
-                placeholder="Write a comment..."
-                value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
-              />
-              <Button size="sm" className="cursor-pointer bg-accent" onClick={handleAddComment}>
-                <SendIcon />
+            <div className="prose prose-neutral mb-6">
+              <p>{singleUpdate.details}</p>
+            </div>
+
+            {/* Navigation Buttons */}
+            <div className="flex justify-between mb-10">
+              <Button
+                variant="outline"
+                onClick={() => prevUpdate && router.push(`/${prevUpdate.id}`)}
+                disabled={!prevUpdate}
+              >
+                ← Previous
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => nextUpdate && router.push(`/${nextUpdate.id}`)}
+                disabled={!nextUpdate}
+              >
+                Next →
               </Button>
             </div>
 
-            {/* Display past comments */}
-            <div className="space-y-2  pr-2">
-              {updateComments?.map((comment: any) => (
-                <div
-                  key={comment.id}
-                  className="border border-border p-2 rounded-md text-sm bg-muted flex flex-col gap-2 overflow-auto max-h-[100px]"
-                >
-                  <span className="font-medium text-foreground">{comment.content}</span>{" "}
-                  <span className="text-muted-foreground">{timeSince(comment.timestamp)}</span>
+            {/* Event Preview Moved Below Main Update */}
+            {updateEvent && (
+              <div className="mt-10 p-4 border rounded-md bg-muted">
+                <h2 className="text-xl font-semibold mb-2">{updateEvent.title}</h2>
+                <p className="text-sm text-muted-foreground">{format(new Date(updateEvent.timestamp), "PPPpp")}</p>
+                <p className="mt-2 text-sm">{updateEvent.details}</p>
+              </div>
+            )}
+
+            {/* Comments */}
+            {isCommenting && (
+              <div className="mt-6 space-y-3 border-t border-border pt-4">
+                {/* Comment input */}
+                <div className="flex gap-2 items-center">
+                  <Input
+                    placeholder="Write a comment..."
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                  />
+                  <Button size="sm" className="cursor-pointer bg-accent" onClick={handleAddComment}>
+                    <SendIcon />
+                  </Button>
+                </div>
+
+                {/* Display past comments */}
+                <div className="space-y-2 pr-2">
+                  {updateComments?.map((comment: any) => (
+                    <div
+                      key={comment.id}
+                      className="border border-border p-2 rounded-md text-sm bg-muted flex flex-col gap-2 overflow-auto max-h-[100px]"
+                    >
+                      <span className="font-medium text-foreground">{comment.content}</span>
+                      <span className="text-muted-foreground">{timeSince(comment.timestamp)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Right Column: Related Updates */}
+          <div className="w-full lg:w-1/3">
+            <h3 className="text-lg font-semibold mb-4 mt-10">Recent Updates</h3>
+            <div className="space-y-4">
+              {relatedUpdates?.map((update: any) => (
+                <div key={update.id} className="border rounded-md bg-muted shadow-sm p-2">
+                  {update.image_url && (
+                    <Image
+                      src={update.image_url}
+                      alt={update.title}
+                      width={400}
+                      height={100}
+                      className="object-fit w-full h-[250px] rounded mb-2 cursor-pointer"
+                      onClick={() => router.push(`/${update.id}`)}
+                    />
+                  )}
+                  <div className="flex items-center gap-2 text-xs mb-1">
+                    
+                    <span className="text-muted-foreground">
+                      {update.comments?.length || 0} updates
+                    </span>
+                  </div>
+                  <p
+                    // variant={update.id === singleUpdate.id ? "secondary" : "ghost"}
+                    className="w-full text-left justify-start"
+                  >
+                    {update.title}
+                  </p>
                 </div>
               ))}
             </div>
           </div>
-        )}
+        </div>
       </div>
     </div>
   );

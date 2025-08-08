@@ -78,10 +78,6 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
             invalidatesTags: [{ type: "all-videos" }],
         }).unwrap()
             .then((res) => {
-                // toast({
-                //     title: "Success",
-                //     description: isLiked ? "Like removed!" : "Update liked!",
-                // });
                 if (!isLiked && res?.id) {
                     setLikeId(res.id); // Store like_id for potential unlike
                 } else if (isLiked) {
