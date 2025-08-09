@@ -12,6 +12,26 @@ import { toast } from "@/hooks/use-toast";
 import { timeSince } from "@/utils/formatDate";
 import { Input } from "../ui/input";
 import VideoCard from "../VideoCard";
+import DOMPurify from 'dompurify';
+
+
+export function CleanHTML({ html }: { html: string }) {
+  const clean = DOMPurify.sanitize(html, {
+    FORBID_ATTR: ["style", "width", "height", "cellpadding", "cellspacing", "span"],
+    FORBID_TAGS: ["colgroup", "col", "span", "paragraph"], // remove unnecessary table width stuff
+  });
+
+  return <div dangerouslySetInnerHTML={{ __html: clean }} />;
+}
+
+
+export function cleanHTMLToString(html: string): string {
+  if (!html) return "";
+  // Create a temporary element to parse HTML
+  const tempDiv = document.createElement("div");
+  tempDiv.innerHTML = html;
+  return tempDiv.textContent || tempDiv.innerText || "";
+}
 
 
 const LiveUpdates = () => {
@@ -40,8 +60,7 @@ const LiveUpdates = () => {
       ? { id: selectedEvent.id, limit, offset }
       : skipToken
   );
-
-
+  
   useEffect(() => {
     if (mockEvents && mockEvents?.length > 0) {
       setSelectedEvent(mockEvents?.slice().reverse()[0]);
@@ -149,7 +168,7 @@ const LiveUpdates = () => {
     if (!id) return;
     const method = isVideoLiked ? "DELETE" : "POST";
     const url = isVideoLiked ? `/likes/${likeId}` : `/tvs/${id}/likes`;
-    
+
     likeVideo({
       url,
       method,
@@ -215,8 +234,7 @@ const LiveUpdates = () => {
                       />
                     </div>
                   )}
-
-                  <p>{selectedEvent.details}</p>
+                  <CleanHTML html={selectedEvent?.details} />
                   <div className="flex items-center space-x-4">
                     <Button
                       variant="ghost"

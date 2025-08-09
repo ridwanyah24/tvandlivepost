@@ -9,6 +9,7 @@ import { SendIcon } from "lucide-react";
 import { useGenericMutationMutation, useGetUpdateCommentsQuery, ValidTags } from "@/slice/requestSlice";
 import { toast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
+import { CleanHTML, cleanHTMLToString} from "./liveUpdates/liveupdates";
 
 
 
@@ -43,9 +44,10 @@ const LiveUpdateCard = ({ update, onLike, onComment }: LiveUpdateCardProps) => {
     // setExpanded((prev) => !prev)
     router.push(`/${update.id}`)
   }
-  const description = update?.details
+
+  const description = cleanHTMLToString(update?.details)
   const isTruncated = description?.length > maxLength;
-  const displayedText = expanded ? description : description?.slice(0, maxLength);
+  const displayedText = expanded ? <CleanHTML html={update?.details} /> : description?.slice(0, maxLength);
 
   const [isLiked, setIsLiked] = useState(update.isLiked || false);
   const [isCommenting, setIsCommenting] = useState(false);
@@ -133,6 +135,7 @@ const LiveUpdateCard = ({ update, onLike, onComment }: LiveUpdateCardProps) => {
         </div>
 
         <p className="text-muted-foreground mb-4 leading-relaxed">
+          {/* <CleanHTML html={displayedText} /> */}
           {displayedText}
           {isTruncated && !expanded && "..."}
           {isTruncated && (

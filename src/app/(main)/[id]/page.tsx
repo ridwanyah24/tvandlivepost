@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { SendIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
+import { CleanHTML, cleanHTMLToString } from "@/components/liveUpdates/liveupdates";
 
 export default function Page({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -19,11 +20,15 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
   const { data: updateComments } = useGetUpdateCommentsQuery({ id });
   const [postComment] = useGenericMutationMutation();
   const { data: updateEvent } = useGetSingleEventQuery({ id: singleUpdate?.event_id });
-  const [open, setOpen] = useState(false);
   const [showFull, setShowFull] = useState(false);
-
   const [newComment, setNewComment] = useState("");
   const [isCommenting, setIsCommenting] = useState(true);
+
+  const [expanded, setExpanded] = useState(false);
+  const maxLength = 200;
+  const description = cleanHTMLToString(updateEvent?.details)
+  const isTruncated = description?.length > maxLength;
+  const displayedText = expanded ? <CleanHTML html={updateEvent?.details} /> : description?.slice(0, maxLength);
 
   const relatedUpdates = useMemo(() => {
     if (!updateEvent?.updates) return [];
@@ -86,7 +91,8 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
             )}
 
             <div className="prose prose-neutral mb-6">
-              <p>{singleUpdate.details}</p>
+              {/* <p>{singleUpdate.details}</p> */}
+              <CleanHTML html={singleUpdate?.details} />
             </div>
 
             {/* Navigation Buttons */}
@@ -131,15 +137,18 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
                   </p>
 
                   {/* Description with toggle */}
-                  <p className={`mt-2 text-sm ${showFull ? "" : "line-clamp-3"}`}>
-                    {updateEvent.details}
+                  <p>
+                    {displayedText}
+                    {isTruncated && !expanded && "..."}
+                    {isTruncated && (
+                      <button
+                        onClick={()=>setExpanded(!expanded)}
+                        className="text-accent cursor-pointer  ml-1 hover:underline text-sm"
+                      >
+                        {expanded ? "View less" : "View more"}
+                      </button>
+                    )}
                   </p>
-                  <button
-                    onClick={() => setShowFull(!showFull)}
-                    className="text-blue-600 text-sm font-medium mt-1 hover:underline"
-                  >
-                    {showFull ? "Show less" : "Read more"}
-                  </button>
                 </div>
               </div>
             }

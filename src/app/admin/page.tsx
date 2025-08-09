@@ -29,6 +29,16 @@ import { useRouter } from "next/navigation";
 import { timeSince } from "@/utils/formatDate";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Command, CommandGroup, CommandItem } from "@/components/ui/command"
+import { Editor } from "@/components/blocks/editor-x/editor"
+import { $generateHtmlFromNodes } from "@lexical/html";
+import { createEditor, EditorState } from "lexical";
+import { TableNode, TableRowNode, TableCellNode } from "@lexical/table"; // add if you use tables
+import { ListNode, ListItemNode } from "@lexical/list";
+import { HeadingNode, QuoteNode } from "@lexical/rich-text";
+import { CodeNode, CodeHighlightNode } from "@lexical/code";
+import { LinkNode, AutoLinkNode } from "@lexical/link";
+import { HorizontalRuleNode } from "@lexical/react/LexicalHorizontalRuleNode";
+import { HashtagNode } from "@lexical/hashtag";
 
 
 
@@ -60,6 +70,41 @@ const updateSchema = z.object({
 
 });
 
+export function editorStateToHTML(editorStateJSON: any) {
+  const editor = createEditor({
+    nodes: [
+      HeadingNode,
+      QuoteNode,
+      ListNode,
+      ListItemNode,
+      CodeNode,
+      CodeHighlightNode,
+      TableNode,
+      TableRowNode,
+      TableCellNode,
+      LinkNode, 
+      HashtagNode,
+      // HeadingNode
+      HorizontalRuleNode,
+    ]
+  });
+
+  try {
+    const editorState: EditorState = editor.parseEditorState(editorStateJSON);
+    let html = "";
+    editor.setEditorState(editorState);
+
+    editor.update(() => {
+      html = $generateHtmlFromNodes(editor);
+    });
+
+    return html;
+  } catch (err) {
+    console.error("Failed to parse Lexical state", err);
+    return "";
+  }
+}
+
 const uploadVideoSchema = z.object({
   title: z.string().min(1, "Title is required"),
   thumbnail: z
@@ -84,8 +129,7 @@ const Admin = () => {
   const [createEvent, { isLoading, isError, isSuccess }] = useGenericMutationMutation();
   const [postUpdate, { isLoading: loading, isError: error, isSuccess: success }] = useGenericMutationMutation();
   const [eventId, setEventId] = useState("");
-  const [catId, setCatId] = useState<string[]>([])
-  const [uploadVideoMutation, {isLoading: loadingVideos}] = useGenericMutationMutation();
+  const [uploadVideoMutation, { isLoading: loadingVideos }] = useGenericMutationMutation();
   const { data: videoCategories, isLoading: loadingCategories, isError: errorGetCat } = useGetAllCategoriesQuery();
   const [endEvent, { isLoading: endingEvent, isError: errorEVent }] = useGenericMutationMutation();
   const { data: activeEvents, isLoading: loadingEvents, isError: eventsError } = useGetAllEventsQuery();
@@ -115,9 +159,13 @@ const Admin = () => {
     handleSubmit: handleSubmitEvent,
     reset: resetEventForm,
     setValue: setEventValue,
+    watch: watchEvent,
     formState: { errors: eventErrors },
   } = useForm({
     resolver: zodResolver(createEventSchema),
+    defaultValues: {
+      description: ""
+    }
   });
 
   const {
@@ -144,16 +192,26 @@ const Admin = () => {
 
 
   const handleCreateEvent = (data: z.infer<typeof createEventSchema>) => {
-
     const formData = new FormData();
+    let htmlDescription = "";
+    try {
+      const parsedState = JSON.parse(data.description);
+      htmlDescription = editorStateToHTML(parsedState);
+      console.log(htmlDescription);
+      
+    } catch (err) {
+      console.error("Failed to parse Lexical state", err);
+    }
     // Append the update object as a JSON string
     formData.append("title", data.title);
-    formData.append("details", data.description);
+    formData.append("details", htmlDescription);
     if (data.image_file) {
       formData.append("image_file", data.image_file);
     }
 
-    console.log(data);
+    for (const [key, value] of formData.entries()) {
+      console.log(key, value);
+    }
     createEvent({
       url: '/admin/events',
       method: "POST",
@@ -179,9 +237,17 @@ const Admin = () => {
 
   const handleCreateUpdate = (data: z.infer<typeof updateSchema>) => {
     const formData = new FormData();
-    // Append the update object as a JSON string
+    let htmlDescription = "";
+    try {
+      const parsedState = JSON.parse(data.details);
+      htmlDescription = editorStateToHTML(parsedState);
+      console.log(htmlDescription);
+      
+    } catch (err) {
+      console.error("Failed to parse Lexical state", err);
+    }
     formData.append("title", data.title);
-    formData.append("details", data.details);
+    formData.append("details", htmlDescription);
 
     // Append the image file
     if (data.image_file) {
@@ -196,7 +262,7 @@ const Admin = () => {
       url: `/admin/events/${eventId}/updates`,
       method: "POST",
       body: formData,
-      invalidatesTags: [{type: "updates"}]
+      invalidatesTags: [{ type: "updates" }]
     }).unwrap().then(() => {
       toast({
         title: "Success",
@@ -298,10 +364,9 @@ const Admin = () => {
               <span>View Analytics</span>
             </TabsTrigger>
           </TabsList>
-
           {/* Events Tab */}
           <TabsContent value="events" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 gap-6">
               {/* Create Event */}
               <Card>
                 <CardHeader>
@@ -316,7 +381,17 @@ const Admin = () => {
                     </div>
                     <div>
                       <Label htmlFor="event-description">Body</Label>
-                      <Textarea id="event-description" {...registerEvent("description")} />
+                      {/* <Textarea id="event-description" {...registerEvent("description")} /> */}
+                      <Editor
+                        editorSerializedState={
+                          watchEvent("description")
+                            ? JSON.parse(watchEvent("description"))
+                            : undefined
+                        }
+                        onSerializedChange={(state: any) => {
+                          setEventValue("description", JSON.stringify(state), { shouldValidate: true });
+                        }}
+                      />
                     </div>
                     <div>
                       <Label htmlFor="image_file">Cover Image</Label>
@@ -379,7 +454,7 @@ const Admin = () => {
 
           {/* Updates Tab */}
           <TabsContent value="updates" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 gap-6">
               {/* Create Update */}
               <Card>
                 <CardHeader>
@@ -419,11 +494,21 @@ const Admin = () => {
 
                     <div>
                       <Label htmlFor="update.details">Details</Label>
-                      <Textarea
+                      {/* <Textarea
                         id="update.details"
                         {...registerUpdate("details")}
                         placeholder="Enter update details"
                         rows={4}
+                      /> */}
+                       <Editor
+                        editorSerializedState={
+                          watch("details")
+                            ? JSON.parse(watch("details"))
+                            : undefined
+                        }
+                        onSerializedChange={(state: any) => {
+                          setValue("details", JSON.stringify(state), { shouldValidate: true });
+                        }}
                       />
                       {updateErrors.details && (
                         <p className="text-red-500 text-sm">{updateErrors.details.message}</p>
@@ -466,7 +551,7 @@ const Admin = () => {
                 <CardContent>
                   <div className="space-y-4">
                     {(recentUpdates || []).map((update: any) => (
-                      <div key={update.id} className="p-4 border border-border rounded-lg cursor-pointer" onClick={()=>router.push(`/${update.id}`)}>
+                      <div key={update.id} className="p-4 border border-border rounded-lg cursor-pointer" onClick={() => router.push(`/${update.id}`)}>
                         <div className="flex items-start justify-between mb-2">
                           <h3 className="font-semibold text-foreground text-sm">{update.title}</h3>
                           <span className="text-xs text-muted-foreground">{timeSince(update.timestamp)}</span>
