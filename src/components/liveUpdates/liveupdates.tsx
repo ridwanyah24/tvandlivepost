@@ -204,6 +204,7 @@ const LiveUpdates = () => {
 
           {/* Main Content */}
           <div className="lg:col-span-3">
+            {!selectedEvent && (<p>No Events to show</p>)}
             {selectedEvent && (
               <Card className="mb-8 border-accent">
                 <CardHeader>
@@ -285,11 +286,12 @@ const LiveUpdates = () => {
             )}
 
             {/* Updates Feed */}
-            <div className="space-y-6">
+            <div className="space-y-6 mt-5">
               <h3 className="text-xl font-semibold text-foreground flex items-center">
                 <div className="w-2 h-2 bg-accent rounded-full mr-3 animate-pulse" />
                 Live Updates
               </h3>
+              {/* {loadedUpdates === [] && (<p>No updates currently</p>) } */}
 
               {loadedUpdates?.map((update: any) => (
                 <LiveUpdateCard
