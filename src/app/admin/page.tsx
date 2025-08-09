@@ -30,15 +30,8 @@ import { timeSince } from "@/utils/formatDate";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Command, CommandGroup, CommandItem } from "@/components/ui/command"
 import { Editor } from "@/components/blocks/editor-x/editor"
-import { $generateHtmlFromNodes } from "@lexical/html";
-import { createEditor, EditorState } from "lexical";
-import { TableNode, TableRowNode, TableCellNode } from "@lexical/table"; // add if you use tables
-import { ListNode, ListItemNode } from "@lexical/list";
-import { HeadingNode, QuoteNode } from "@lexical/rich-text";
-import { CodeNode, CodeHighlightNode } from "@lexical/code";
-import { LinkNode, AutoLinkNode } from "@lexical/link";
-import { HorizontalRuleNode } from "@lexical/react/LexicalHorizontalRuleNode";
-import { HashtagNode } from "@lexical/hashtag";
+import { editorStateToHTML } from "@/utils/checkHtml";
+
 
 
 
@@ -70,40 +63,6 @@ const updateSchema = z.object({
 
 });
 
-export function editorStateToHTML(editorStateJSON: any) {
-  const editor = createEditor({
-    nodes: [
-      HeadingNode,
-      QuoteNode,
-      ListNode,
-      ListItemNode,
-      CodeNode,
-      CodeHighlightNode,
-      TableNode,
-      TableRowNode,
-      TableCellNode,
-      LinkNode, 
-      HashtagNode,
-      // HeadingNode
-      HorizontalRuleNode,
-    ]
-  });
-
-  try {
-    const editorState: EditorState = editor.parseEditorState(editorStateJSON);
-    let html = "";
-    editor.setEditorState(editorState);
-
-    editor.update(() => {
-      html = $generateHtmlFromNodes(editor);
-    });
-
-    return html;
-  } catch (err) {
-    console.error("Failed to parse Lexical state", err);
-    return "";
-  }
-}
 
 const uploadVideoSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -423,9 +382,9 @@ const Admin = () => {
                 <CardContent>
                   <div className="space-y-4">
                     {activeEvents?.map((event: any) => (
-                      <div key={event.id} className="flex cursor-pointer items-center justify-between p-4 border border-border rounded-lg" onClick={() => router.push("/")}>
+                      <div key={event.id} className="flex cursor-pointer items-center justify-between p-4 border border-border rounded-lg" >
                         <div>
-                          <h3 className="font-semibold text-foreground">{event.title}</h3>
+                          <h3 className="font-semibold text-foreground cursor-pointer" onClick={() => router.push("/")}>{event.title}</h3>
                           <div className="flex items-center space-x-4 text-sm text-muted-foreground">
                             <span>{event?.updates?.length} updates</span>
                           </div>

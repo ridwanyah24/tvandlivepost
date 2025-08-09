@@ -255,7 +255,7 @@ function TableActionMenu({
 
         const tableObserver = getTableObserverFromTableElement(tableElement)
         if (tableObserver !== null) {
-          tableObserver.clearHighlight()
+          tableObserver.$clearHighlight()
         }
 
         tableNode.markDirty()
@@ -684,7 +684,7 @@ function TableCellActionMenuContainer({
           <PopoverTrigger asChild>
             <button
               type="button"
-              className="relative flex inline-block cursor-pointer items-center justify-center bg-none"
+              className="relative flex cursor-pointer items-center justify-center bg-none"
               onClick={(e) => {
                 e.stopPropagation()
                 setIsMenuOpen(!isMenuOpen)
