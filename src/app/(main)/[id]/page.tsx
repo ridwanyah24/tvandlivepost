@@ -169,7 +169,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
                 </div>
 
                 {/* Display past comments */}
-                <div className="space-y-2 pr-2">
+                <div className="space-y-2 pr-2 overflow-auto max-h-[400px]">
                   {updateComments?.map((comment: any) => (
                     <div
                       key={comment.id}
