@@ -187,7 +187,7 @@ export const apiSlice = createApi({
         getAllEvents: builder.query<any, Partial<void>>({
             query() {
                 return {
-                    url: `/events`,
+                    url: `/events/`,
                     method: "GET"
                 };
             },
@@ -272,7 +272,7 @@ export const apiSlice = createApi({
         getAllCategories: builder.query<any, Partial<void>>({
             query() {
                 return {
-                    url: `/categories`,
+                    url: `/categories/`,
                     method: "GET",
                 }
             }

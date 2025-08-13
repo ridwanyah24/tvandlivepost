@@ -1,5 +1,5 @@
 export function timeSince(dateString: string): string {
-  const date = new Date(dateString + "Z"); // Treat as UTC
+  const date = new Date(dateString); // Treat as UTC
   if (isNaN(date.getTime())) return "Invalid date";
 
   const now = new Date();

@@ -281,7 +281,7 @@ const Admin = () => {
     }).unwrap().then(() => {
       toast({
         title: "Success",
-        description: "video posted successfully!",
+        description: "Event Ended",
       });
     }).catch((error) => {
       toast({
