@@ -1,1 +1,1 @@
-export const baseUrl ="https://blacctheddi.onrender.com";
+export const baseUrl ="https://api.madeinblacc.net";
