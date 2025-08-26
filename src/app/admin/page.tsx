@@ -33,8 +33,6 @@ import { Editor } from "@/components/blocks/editor-x/editor"
 import { editorStateToHTML } from "@/utils/checkHtml";
 
 
-
-
 const createEventSchema = z.object({
   title: z.string().min(1, "Event title is required"),
   description: z.string(),
@@ -62,7 +60,6 @@ const updateSchema = z.object({
     }),
 
 });
-
 
 const uploadVideoSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -149,7 +146,6 @@ const Admin = () => {
     resolver: zodResolver(uploadVideoSchema),
   });
 
-
   const handleCreateEvent = (data: z.infer<typeof createEventSchema>) => {
     const formData = new FormData();
     let htmlDescription = "";
@@ -157,7 +153,7 @@ const Admin = () => {
       const parsedState = JSON.parse(data.description);
       htmlDescription = editorStateToHTML(parsedState);
       console.log(htmlDescription);
-      
+
     } catch (err) {
       console.error("Failed to parse Lexical state", err);
     }
@@ -201,7 +197,7 @@ const Admin = () => {
       const parsedState = JSON.parse(data.details);
       htmlDescription = editorStateToHTML(parsedState);
       console.log(htmlDescription);
-      
+
     } catch (err) {
       console.error("Failed to parse Lexical state", err);
     }
@@ -237,41 +233,127 @@ const Admin = () => {
     resetUpdate();
   };
 
-  const handleUploadVideo = (data: z.infer<typeof uploadVideoSchema>) => {
-    // data && console.log("I'm submitting");
-    const formData = new FormData();
-    formData.append("title", data.title);
-    formData.append("video_file", data.video_file);
-    formData.append("description", data.description);
 
-    data.category_ids.forEach((id) => {
-      formData.append("category_ids", String(id));
-    });
-
-    if (data.thumbnail) formData.append("thumbnail", data.thumbnail);
-
-    for (const [key, value] of formData.entries()) {
-      console.log(key, value);
+const handleUploadVideo = async (data: z.infer<typeof uploadVideoSchema>) => {
+  try {
+    const file = data.video_file;
+    if (!file) {
+      toast({
+        title: "Error",
+        description: "No video file selected.",
+        variant: "destructive",
+      });
+      return;
     }
 
-    uploadVideoMutation({
+    // 1. Ask backend to start multipart upload
+    const initRes = await postUpdate({
+      url: `/admin/videos/multipart/initiate`,
+      method: "POST",
+      body: { filename: file.name, content_type: file.type },
+    }).unwrap();
+
+    const { upload_id, key } = initRes;
+    if (!upload_id || !key) {
+      throw new Error("Failed to initiate multipart upload. Missing upload_id or key.");
+    }
+
+    // 2. Upload chunks
+    const parts = await uploadVideoMultipart(file, key, upload_id, postUpdate);
+
+    if (!parts.length) {
+      throw new Error("No parts uploaded — upload failed.");
+    }
+
+    // 3. Finalize upload with metadata
+    const formData = new FormData();
+    formData.append("title", data.title);
+    formData.append("description", data.description);
+    data.category_ids.forEach((id) => formData.append("category_ids", String(id)));
+    if (data.thumbnail) formData.append("thumbnail", data.thumbnail);
+    formData.append("key", key);
+    formData.append("upload_id", upload_id);
+    formData.append("parts", JSON.stringify(parts));
+
+    await postUpdate({
       url: `/admin/videos`,
       method: "POST",
       body: formData,
-    }).unwrap().then(() => {
-      toast({
-        title: "Success",
-        description: "video posted successfully!",
-      });
-    }).catch((error) => {
-      toast({
-        title: "Error",
-        description: error?.data?.message || "Failed to post video.",
-        variant: "destructive",
-      });
+    }).unwrap();
+
+    toast({
+      title: "Success",
+      description: "Video posted successfully!",
     });
     resetVideo();
-  };
+  } catch (error: any) {
+    console.error("Upload error:", error);
+    toast({
+      title: "Error",
+      description: error?.message || "Failed to post video.",
+      variant: "destructive",
+    });
+  }
+};
+
+
+async function uploadVideoMultipart(
+  file: { size: number; slice: (start: number, end: number) => Blob },
+  key: string,
+  uploadId: string,
+  postUpdate: ReturnType<typeof useGenericMutationMutation>[0]
+) {
+  const chunkSize = 5 * 1024 * 1024; // 5MB
+  const chunks = Math.ceil(file.size / chunkSize);
+  const parts: { ETag: string; PartNumber: number }[] = [];
+  const CONCURRENCY = 4;
+
+  async function uploadPart(partNumber: number, blob: Blob) {
+    try {
+      // Ask backend for presigned URL
+      const { url } = await postUpdate({
+        url: `/admin/videos/multipart/sign-part`,
+        method: "POST",
+        body: { key, upload_id: uploadId, part_number: partNumber },
+      }).unwrap();
+
+      if (!url) throw new Error(`No presigned URL returned for part ${partNumber}`);
+
+      // Upload to R2
+      const uploadRes = await fetch(url, { method: "PUT", body: blob });
+      if (!uploadRes.ok) {
+        const text = await uploadRes.text().catch(() => "");
+        throw new Error(
+          `Chunk ${partNumber} upload failed: ${uploadRes.status} ${uploadRes.statusText} ${text}`
+        );
+      }
+
+      const etagHeader = uploadRes.headers.get("ETag");
+      if (!etagHeader) throw new Error(`No ETag header for chunk ${partNumber}`);
+
+      return { ETag: etagHeader.replace(/"/g, ""), PartNumber: partNumber };
+    } catch (err) {
+      console.error(`❌ Failed to upload part ${partNumber}`, err);
+      throw err; // stop the whole upload
+    }
+  }
+
+  for (let i = 0; i < chunks; i += CONCURRENCY) {
+    const batch: Promise<{ ETag: string; PartNumber: number }>[] = [];
+    for (let j = 0; j < CONCURRENCY && i + j < chunks; j++) {
+      const start = (i + j) * chunkSize;
+      const end = Math.min(file.size, start + chunkSize);
+      batch.push(uploadPart(i + j + 1, file.slice(start, end)));
+    }
+
+    const batchResults = await Promise.all(batch); // will throw if any fails
+    parts.push(...batchResults);
+  }
+
+  console.log("✅ All parts uploaded:", parts);
+  return parts;
+}
+
 
   const handleEndEvent = (eventId: string) => {
     endEvent({
@@ -292,6 +374,49 @@ const Admin = () => {
     });
   };
 
+  // const handleUploadVideo = (data: z.infer<typeof uploadVideoSchema>) => {
+  //   const formData = new FormData();
+
+  //   formData.append("title", data.title);
+  //   formData.append("video_file", data.video_file);
+  //   formData.append("description", data.description);
+
+  //   data.category_ids.forEach((id) => {
+  //     formData.append("category_ids", String(id));
+  //   });
+
+  //   if (data.thumbnail) {
+  //     formData.append("thumbnail", data.thumbnail);
+  //   }
+
+  //   // Debug: log all form data entries
+  //   for (const [key, value] of formData.entries()) {
+  //     console.log(key, value);
+  //   }
+
+  //   uploadVideoMutation({
+  //     url: "/admin/videos",
+  //     method: "POST",
+  //     body: formData,
+  //   })
+  //     .unwrap()
+  //     .then(() => {
+  //       toast({
+  //         title: "Success",
+  //         description: "Video posted successfully!",
+  //       });
+  //     })
+  //     .catch((error) => {
+  //       toast({
+  //         title: "Error",
+  //         description: error?.data?.message || "Failed to post video.",
+  //         variant: "destructive",
+  //       });
+  //     });
+
+  //   resetVideo();
+  // };
+
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
@@ -305,6 +430,7 @@ const Admin = () => {
         </div>
 
         <Tabs defaultValue="events" className="space-y-6">
+
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="events" className="flex items-center space-x-2 cursor-pointer">
               <RadioIcon className="w-4 h-4" />
@@ -323,6 +449,7 @@ const Admin = () => {
               <span>View Analytics</span>
             </TabsTrigger>
           </TabsList>
+
           {/* Events Tab */}
           <TabsContent value="events" className="space-y-6">
             <div className="grid grid-cols-1 gap-6">
@@ -459,7 +586,7 @@ const Admin = () => {
                         placeholder="Enter update details"
                         rows={4}
                       /> */}
-                       <Editor
+                      <Editor
                         editorSerializedState={
                           watch("details")
                             ? JSON.parse(watch("details"))
@@ -735,6 +862,7 @@ const Admin = () => {
               </CardContent>
             </Card>
           </TabsContent>
+
         </Tabs>
       </div>
     </div >
