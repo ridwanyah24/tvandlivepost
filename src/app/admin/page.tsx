@@ -793,11 +793,11 @@ async function uploadVideoMultipart(
 
                     <Button
                       type="submit"
-                      disabled={loadingVideos}
+                      disabled={loadingVideos || loading}
                       className="w-full bg-accent text-accent-foreground hover:bg-accent/90 cursor-pointer"
                     >
                       {/* Upload Video */}
-                      {loadingVideos ? "Posting Video" : "Upload Video"}
+                      {loadingVideos || loading ? "Posting Video" : "Upload Video"}
                     </Button>
                   </form>
                 </CardContent>
