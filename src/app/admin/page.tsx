@@ -32,6 +32,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandGroup, CommandItem } from "@/components/ui/command"
 import { Editor } from "@/components/blocks/editor-x/editor"
 import { editorStateToHTML } from "@/utils/checkHtml";
+import { LoadingModal } from "@/components/VideoCard";
 
 
 const createEventSchema = z.object({
@@ -79,18 +80,6 @@ const uploadVideoSchema = z.object({
   category_ids: z.array(z.number()).min(1),
 });
 
-export function LoadingModal({ open }: { open: boolean }) {
-  if (!open) return null;
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-      <div className="bg-background p-6 rounded-xl shadow-lg flex flex-col items-center gap-3">
-        <Loader2 className="w-6 h-6 animate-spin text-accent" />
-        <p className="text-sm text-foreground">Uploading your video...</p>
-      </div>
-    </div>
-  );
-}
 
 const Admin = () => {
   const { toast } = useToast();
@@ -900,7 +889,6 @@ const Admin = () => {
           </TabsContent>
 
         </Tabs>
-
         <LoadingModal open={uploading || loading} />
       </div>
     </div >

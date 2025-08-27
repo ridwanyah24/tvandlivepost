@@ -1,12 +1,12 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { HeartIcon, MessageCircleIcon, EyeIcon, PlayIcon } from "lucide-react";
+import { HeartIcon, MessageCircleIcon, EyeIcon, PlayIcon, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { useGetVideoViewsQuery } from "@/slice/requestSlice";
 import { useRouter } from "next/navigation";
 
 interface Video {
-  id:  number;
+  id: number;
   title: string;
   views: number;
   likes: [];
@@ -25,8 +25,8 @@ interface VideoCardProps {
 }
 
 const VideoCard = ({ video, onPlay, onLike, onComment, size = "large" }: VideoCardProps) => {
-  
-  const {data:videoViews} = useGetVideoViewsQuery({id:video.id})
+
+  const { data: videoViews } = useGetVideoViewsQuery({ id: video.id })
   const [isLiked, setIsLiked] = useState(video.isLiked || false);
 
   const handleLike = () => {
@@ -43,17 +43,17 @@ const VideoCard = ({ video, onPlay, onLike, onComment, size = "large" }: VideoCa
     return num;
   };
 
-  const cardClassName = size === "small" 
-    ? "mb-3 hover:bg-muted/50 transition-colors duration-200" 
+  const cardClassName = size === "small"
+    ? "mb-3 hover:bg-muted/50 transition-colors duration-200"
     : "mb-6 hover:bg-muted/50 transition-colors duration-200";
 
-  const thumbnailClassName = size === "small" 
-    ? "h-24" 
+  const thumbnailClassName = size === "small"
+    ? "h-24"
     : "h-48 md:h-56";
 
   return (
     <Card className={cardClassName}>
-      <div 
+      <div
         className={`relative ${thumbnailClassName} bg-muted rounded-t-lg overflow-hidden cursor-pointer group w-full`}
         onClick={() => onPlay(video.id)}
       >
@@ -76,7 +76,7 @@ const VideoCard = ({ video, onPlay, onLike, onComment, size = "large" }: VideoCa
         <h3 className={`font-semibold text-foreground mb-2 line-clamp-2 ${size === "small" ? "text-sm" : "text-lg"}`}>
           {video.title}
         </h3>
-        
+
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4 text-muted-foreground text-sm">
             <div className="flex items-center space-x-1">
@@ -90,14 +90,13 @@ const VideoCard = ({ video, onPlay, onLike, onComment, size = "large" }: VideoCa
               variant="ghost"
               size="sm"
               onClick={handleLike}
-              className={`flex items-center space-x-1 ${
-                isLiked ? "text-accent" : "text-muted-foreground hover:text-accent"
-              }`}
+              className={`flex items-center space-x-1 ${isLiked ? "text-accent" : "text-muted-foreground hover:text-accent"
+                }`}
             >
               <HeartIcon className={`w-4 h-4 ${isLiked ? "fill-current" : ""}`} />
               <span className="text-xs">{video.likes.length}</span>
             </Button>
-            
+
             <Button
               variant="ghost"
               size="sm"
@@ -113,5 +112,19 @@ const VideoCard = ({ video, onPlay, onLike, onComment, size = "large" }: VideoCa
     </Card>
   );
 };
+
+
+export function LoadingModal({ open }: { open: boolean }) {
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+      <div className="bg-background p-6 rounded-xl shadow-lg flex flex-col items-center gap-3">
+        <Loader2 className="w-6 h-6 animate-spin text-accent" />
+        <p className="text-sm text-foreground">Uploading your video...</p>
+      </div>
+    </div>
+  );
+}
 
 export default VideoCard;
