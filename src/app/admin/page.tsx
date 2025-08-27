@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/text-area";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Loader2 } from "lucide-react";
 import {
   SettingsIcon,
   PlusIcon,
@@ -78,6 +79,18 @@ const uploadVideoSchema = z.object({
   category_ids: z.array(z.number()).min(1),
 });
 
+export function LoadingModal({ open }: { open: boolean }) {
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+      <div className="bg-background p-6 rounded-xl shadow-lg flex flex-col items-center gap-3">
+        <Loader2 className="w-6 h-6 animate-spin text-accent" />
+        <p className="text-sm text-foreground">Uploading your video...</p>
+      </div>
+    </div>
+  );
+}
 
 const Admin = () => {
   const { toast } = useToast();
@@ -241,6 +254,8 @@ const Admin = () => {
 
   const handleUploadVideo = async (data: z.infer<typeof uploadVideoSchema>) => {
     try {
+      setUploading(true);
+
       const file = data.video_file;
       if (!file) {
         toast({
@@ -305,8 +320,11 @@ const Admin = () => {
         description: error?.message || "Failed to post video.",
         variant: "destructive",
       });
+    } finally {
+      setUploading(false);
     }
   };
+
 
   async function uploadVideoMultipart(
     file: { size: number; slice: (start: number, end: number) => Blob },
@@ -321,7 +339,6 @@ const Admin = () => {
 
     async function uploadPart(partNumber: number, blob: Blob) {
       try {
-        setUploading(true);
 
         // Step 2a. Get presigned URL for this chunk
         const { url } = await postUpdate({
@@ -351,7 +368,6 @@ const Admin = () => {
         return { ETag: etag.replace(/"/g, ""), PartNumber: partNumber };
       } finally {
         // reset uploading state after this part finishes (success or fail)
-        setUploading(false);
       }
     }
 
@@ -884,6 +900,8 @@ const Admin = () => {
           </TabsContent>
 
         </Tabs>
+
+        <LoadingModal open={uploading || loading} />
       </div>
     </div >
   );
