@@ -84,7 +84,7 @@ const Admin = () => {
   const [createEvent, { isLoading, isError, isSuccess }] = useGenericMutationMutation();
   const [postUpdate, { isLoading: loading, isError: error, isSuccess: success }] = useGenericMutationMutation();
   const [eventId, setEventId] = useState("");
-  const [uploadVideoMutation, { isLoading: loadingVideos }] = useGenericMutationMutation();
+  const [uploading, setUploading] = useState(false);
   const { data: videoCategories, isLoading: loadingCategories, isError: errorGetCat } = useGetAllCategoriesQuery();
   const [endEvent, { isLoading: endingEvent, isError: errorEVent }] = useGenericMutationMutation();
   const { data: activeEvents, isLoading: loadingEvents, isError: eventsError } = useGetAllEventsQuery();
@@ -320,32 +320,39 @@ const Admin = () => {
     const CONCURRENCY = 4;
 
     async function uploadPart(partNumber: number, blob: Blob) {
-      // Step 2a. Get presigned URL for this chunk
-      const { url } = await postUpdate({
-        url: `/admin/videos/multipart/sign-part`,
-        method: "POST",
-        body: { key, upload_id: uploadId, part_number: partNumber },
-      }).unwrap();
+      try {
+        setUploading(true);
 
-      if (!url) throw new Error(`No presigned URL for part ${partNumber}`);
+        // Step 2a. Get presigned URL for this chunk
+        const { url } = await postUpdate({
+          url: `/admin/videos/multipart/sign-part`,
+          method: "POST",
+          body: { key, upload_id: uploadId, part_number: partNumber },
+        }).unwrap();
 
-      // Step 2b. Upload directly to S3/R2
-      const uploadRes = await fetch(url, {
-        method: "PUT",
-        body: blob,
-      });
+        if (!url) throw new Error(`No presigned URL for part ${partNumber}`);
 
-      if (!uploadRes.ok) {
-        const text = await uploadRes.text().catch(() => "");
-        throw new Error(
-          `Part ${partNumber} upload failed: ${uploadRes.status} ${uploadRes.statusText} ${text}`
-        );
+        // Step 2b. Upload directly to S3/R2
+        const uploadRes = await fetch(url, {
+          method: "PUT",
+          body: blob,
+        });
+
+        if (!uploadRes.ok) {
+          const text = await uploadRes.text().catch(() => "");
+          throw new Error(
+            `Part ${partNumber} upload failed: ${uploadRes.status} ${uploadRes.statusText} ${text}`
+          );
+        }
+
+        const etag = uploadRes.headers.get("ETag");
+        if (!etag) throw new Error(`Missing ETag for part ${partNumber}`);
+
+        return { ETag: etag.replace(/"/g, ""), PartNumber: partNumber };
+      } finally {
+        // reset uploading state after this part finishes (success or fail)
+        setUploading(false);
       }
-
-      const etag = uploadRes.headers.get("ETag");
-      if (!etag) throw new Error(`Missing ETag for part ${partNumber}`);
-
-      return { ETag: etag.replace(/"/g, ""), PartNumber: partNumber };
     }
 
     // Upload in parallel batches
@@ -806,11 +813,11 @@ const Admin = () => {
 
                     <Button
                       type="submit"
-                      disabled={loadingVideos || loading}
+                      disabled={uploading || loading}
                       className="w-full bg-accent text-accent-foreground hover:bg-accent/90 cursor-pointer"
                     >
                       {/* Upload Video */}
-                      {loadingVideos || loading ? "Posting Video" : "Upload Video"}
+                      {uploading || loading ? "Posting Video" : "Upload Video"}
                     </Button>
                   </form>
                 </CardContent>
