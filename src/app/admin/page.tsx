@@ -58,7 +58,6 @@ const updateSchema = z.object({
     .refine((file) => file === undefined || file.type.startsWith("image/"), {
       message: "Only image files are allowed",
     }),
-
 });
 
 const uploadVideoSchema = z.object({
@@ -233,125 +232,140 @@ const Admin = () => {
     resetUpdate();
   };
 
+  function safeKey(filename: string) {
+    return filename
+      .normalize("NFKD") // normalize unicode
+      .replace(/[^\x00-\x7F]/g, "") // strip non-ASCII
+      .replace(/\s+/g, "_"); // replace spaces
+  }
 
-const handleUploadVideo = async (data: z.infer<typeof uploadVideoSchema>) => {
-  try {
-    const file = data.video_file;
-    if (!file) {
+  const handleUploadVideo = async (data: z.infer<typeof uploadVideoSchema>) => {
+    try {
+      const file = data.video_file;
+      if (!file) {
+        toast({
+          title: "Error",
+          description: "No video file selected.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // 1. Initiate multipart upload
+      const initRes = await postUpdate({
+        url: `/admin/videos/multipart/initiate`,
+        method: "POST",
+        body: {
+          filename: safeKey(file.name),
+          content_type: file.type || "video/mp4",
+        },
+      }).unwrap();
+
+      const { upload_id, key } = initRes;
+      if (!upload_id || !key) {
+        throw new Error("Failed to initiate multipart upload. Missing upload_id or key.");
+      }
+
+      // 2. Upload file in chunks
+      const parts = await uploadVideoMultipart(file, key, upload_id, postUpdate);
+
+      if (!parts.length) {
+        throw new Error("No parts uploaded — upload failed.");
+      }
+
+      // 3. Finalize upload with metadata
+      const formData = new FormData();
+      formData.append("title", data.title);
+      formData.append("description", data.description);
+      data.category_ids.forEach((id) =>
+        formData.append("category_ids", String(id))
+      );
+      if (data.thumbnail) {
+        formData.append("thumbnail", data.thumbnail);
+      }
+      formData.append("key", key);
+      formData.append("upload_id", upload_id);
+      formData.append("parts", JSON.stringify(parts));
+
+      await postUpdate({
+        url: `/admin/videos`,
+        method: "POST",
+        body: formData,
+      }).unwrap();
+
+      toast({
+        title: "Success",
+        description: "Video posted successfully!",
+      });
+      resetVideo();
+    } catch (error: any) {
+      console.error("Upload error:", error);
       toast({
         title: "Error",
-        description: "No video file selected.",
+        description: error?.message || "Failed to post video.",
         variant: "destructive",
       });
-      return;
     }
+  };
 
-    // 1. Ask backend to start multipart upload
-    const initRes = await postUpdate({
-      url: `/admin/videos/multipart/initiate`,
-      method: "POST",
-      body: { filename: file.name, content_type: file.type },
-    }).unwrap();
+  async function uploadVideoMultipart(
+    file: { size: number; slice: (start: number, end: number) => Blob },
+    key: string,
+    uploadId: string,
+    postUpdate: ReturnType<typeof useGenericMutationMutation>[0]
+  ) {
+    const chunkSize = 5 * 1024 * 1024; // 5MB
+    const totalChunks = Math.ceil(file.size / chunkSize);
+    const parts: { ETag: string; PartNumber: number }[] = [];
+    const CONCURRENCY = 4;
 
-    const { upload_id, key } = initRes;
-    if (!upload_id || !key) {
-      throw new Error("Failed to initiate multipart upload. Missing upload_id or key.");
-    }
-
-    // 2. Upload chunks
-    const parts = await uploadVideoMultipart(file, key, upload_id, postUpdate);
-
-    if (!parts.length) {
-      throw new Error("No parts uploaded — upload failed.");
-    }
-
-    // 3. Finalize upload with metadata
-    const formData = new FormData();
-    formData.append("title", data.title);
-    formData.append("description", data.description);
-    data.category_ids.forEach((id) => formData.append("category_ids", String(id)));
-    if (data.thumbnail) formData.append("thumbnail", data.thumbnail);
-    formData.append("key", key);
-    formData.append("upload_id", upload_id);
-    formData.append("parts", JSON.stringify(parts));
-
-    await postUpdate({
-      url: `/admin/videos`,
-      method: "POST",
-      body: formData,
-    }).unwrap();
-
-    toast({
-      title: "Success",
-      description: "Video posted successfully!",
-    });
-    resetVideo();
-  } catch (error: any) {
-    console.error("Upload error:", error);
-    toast({
-      title: "Error",
-      description: error?.message || "Failed to post video.",
-      variant: "destructive",
-    });
-  }
-};
-
-async function uploadVideoMultipart(
-  file: { size: number; slice: (start: number, end: number) => Blob },
-  key: string,
-  uploadId: string,
-  postUpdate: ReturnType<typeof useGenericMutationMutation>[0]
-) {
-  const chunkSize = 5 * 1024 * 1024; // 5MB
-  const chunks = Math.ceil(file.size / chunkSize);
-  const parts: { ETag: string; PartNumber: number }[] = [];
-  const CONCURRENCY = 4;
-
-  async function uploadPart(partNumber: number, blob: Blob) {
-    try {
-      // Ask backend for presigned URL
+    async function uploadPart(partNumber: number, blob: Blob) {
+      // Step 2a. Get presigned URL for this chunk
       const { url } = await postUpdate({
         url: `/admin/videos/multipart/sign-part`,
         method: "POST",
         body: { key, upload_id: uploadId, part_number: partNumber },
       }).unwrap();
 
-      if (!url) throw new Error(`No presigned URL returned for part ${partNumber}`);
+      if (!url) throw new Error(`No presigned URL for part ${partNumber}`);
 
-      // Upload to R2
-      const uploadRes = await fetch(url, { method: "PUT", body: blob });
+      // Step 2b. Upload directly to S3/R2
+      const uploadRes = await fetch(url, {
+        method: "PUT",
+        body: blob,
+      });
+
       if (!uploadRes.ok) {
         const text = await uploadRes.text().catch(() => "");
         throw new Error(
-          `Chunk ${partNumber} upload failed: ${uploadRes.status} ${uploadRes.statusText} ${text}`
+          `Part ${partNumber} upload failed: ${uploadRes.status} ${uploadRes.statusText} ${text}`
         );
       }
 
-      const etagHeader = uploadRes.headers.get("ETag");
-      if (!etagHeader) throw new Error(`No ETag header for chunk ${partNumber}`);
+      const etag = uploadRes.headers.get("ETag");
+      if (!etag) throw new Error(`Missing ETag for part ${partNumber}`);
 
-      return { ETag: etagHeader.replace(/"/g, ""), PartNumber: partNumber };
-    } catch (err) {
-      console.error(`❌ Failed to upload part ${partNumber}`, err);
-      throw err; // stop the whole upload
-    }
-  }
-
-  for (let i = 0; i < chunks; i += CONCURRENCY) {
-    const batch: Promise<{ ETag: string; PartNumber: number }>[] = [];
-    for (let j = 0; j < CONCURRENCY && i + j < chunks; j++) {
-      const start = (i + j) * chunkSize;
-      const end = Math.min(file.size, start + chunkSize);
-      batch.push(uploadPart(i + j + 1, file.slice(start, end)));
+      return { ETag: etag.replace(/"/g, ""), PartNumber: partNumber };
     }
 
-    const batchResults = await Promise.all(batch); // will throw if any fails
-    parts.push(...batchResults);
-  }
+    // Upload in parallel batches
+    for (let i = 0; i < totalChunks; i += CONCURRENCY) {
+      const batch: Promise<{ ETag: string; PartNumber: number }>[] = [];
+      for (let j = 0; j < CONCURRENCY && i + j < totalChunks; j++) {
+        const partNumber = i + j + 1;
+        const start = (i + j) * chunkSize;
+        const end = Math.min(file.size, start + chunkSize);
+        const blob = file.slice(start, end);
+        batch.push(uploadPart(partNumber, blob));
+      }
 
-  console.log("✅ All parts uploaded:", parts);
-  return parts;
-}
+      const results = await Promise.all(batch); // throws if any part fails
+      parts.push(...results);
+    }
+
+    console.log("✅ All parts uploaded:", parts);
+    return parts;
+  }
 
 
   const handleEndEvent = (eventId: string) => {
