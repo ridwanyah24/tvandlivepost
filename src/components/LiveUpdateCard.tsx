@@ -1,7 +1,7 @@
 'use client'
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { HeartIcon, MessageCircleIcon, ClockIcon } from "lucide-react";
+import { HeartIcon, MessageCircleIcon, ClockIcon, Share2Icon, LinkedinIcon, TwitterIcon, CopyIcon } from "lucide-react";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { timeSince } from "@/utils/formatDate";
@@ -9,7 +9,8 @@ import { SendIcon } from "lucide-react";
 import { useGenericMutationMutation, useGetUpdateCommentsQuery, ValidTags } from "@/slice/requestSlice";
 import { toast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
-import { CleanHTML, cleanHTMLToString} from "./liveUpdates/liveupdates";
+import { CleanHTML, cleanHTMLToString } from "./liveUpdates/liveupdates";
+import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 
 
 
@@ -40,7 +41,7 @@ const LiveUpdateCard = ({ update, onLike, onComment }: LiveUpdateCardProps) => {
   const { data: updateComments } = useGetUpdateCommentsQuery({ id: update.id });
   const [expanded, setExpanded] = useState(false);
   const maxLength = 20; // Number of characters to show when collapsed
-  const toggleExpanded = () =>{ 
+  const toggleExpanded = () => {
     // setExpanded((prev) => !prev)
     router.push(`/${update.id}`)
   }
@@ -168,6 +169,67 @@ const LiveUpdateCard = ({ update, onLike, onComment }: LiveUpdateCardProps) => {
             <MessageCircleIcon className="w-4 h-4" />
             <span>{update.comments.length}</span>
           </Button>
+          {/* Share Button */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="flex items-center cursor-pointer space-x-2 text-muted-foreground hover:text-foreground"
+              >
+                <Share2Icon className="w-4 h-4" />
+                <span>Share</span>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-48 flex flex-col space-y-2">
+              <Button
+                variant="ghost"
+                className="justify-start text-sm"
+                onClick={() =>
+                  window.open(
+                    `https://twitter.com/intent/tweet?url=${encodeURIComponent(window.location.href)}&text=${encodeURIComponent(update.title)}`,
+                    "_blank"
+                  )
+                }
+              >
+                <TwitterIcon className="w-4 h-4 mr-2" /> Twitter
+              </Button>
+              <Button
+                variant="ghost"
+                className="justify-start text-sm"
+                onClick={() =>
+                  window.open(
+                    `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(window.location.href)}`,
+                    "_blank"
+                  )
+                }
+              >
+                <LinkedinIcon className="w-4 h-4 mr-2" /> LinkedIn
+              </Button>
+              <Button
+                variant="ghost"
+                className="justify-start text-sm"
+                onClick={() =>
+                  window.open(
+                    `https://wa.me/?text=${encodeURIComponent(update.title + " " + window.location.href)}`,
+                    "_blank"
+                  )
+                }
+              >
+                <MessageCircleIcon className="w-4 h-4 mr-2" /> WhatsApp
+              </Button>
+              <Button
+                variant="ghost"
+                className="justify-start text-sm"
+                onClick={() => {
+                  navigator.clipboard.writeText(window.location.href)
+                  toast({ description: "Link copied to clipboard!" })
+                }}
+              >
+                <CopyIcon className="w-4 h-4 mr-2" /> Copy Link
+              </Button>
+            </PopoverContent>
+          </Popover>
         </div>
 
         {/* Expandable comment section */}
@@ -187,7 +249,6 @@ const LiveUpdateCard = ({ update, onLike, onComment }: LiveUpdateCardProps) => {
 
             {/* Display past comments */}
             <div className="space-y-2 max-h-40 overflow-y-auto pr-2">
-
               <div
                 key={updateComments?.slice().reverse()[0]?.id}
                 className="border border-border p-2 rounded-md text-sm bg-muted flex flex-col gap-2 overflow-auto max-h-[100px]"

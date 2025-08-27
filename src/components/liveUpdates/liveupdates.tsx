@@ -13,7 +13,8 @@ import { timeSince } from "@/utils/formatDate";
 import { Input } from "../ui/input";
 import VideoCard from "../VideoCard";
 import DOMPurify from 'dompurify';
-
+import { Share2Icon, CopyIcon, TwitterIcon, LinkedinIcon } from "lucide-react"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 
 export function CleanHTML({ html }: { html: string }) {
   const clean = DOMPurify.sanitize(html, {
@@ -60,7 +61,7 @@ const LiveUpdates = () => {
       ? { id: selectedEvent.id, limit, offset }
       : skipToken
   );
-  
+
   useEffect(() => {
     if (mockEvents && mockEvents?.length > 0) {
       setSelectedEvent(mockEvents?.slice().reverse()[0]);
@@ -237,6 +238,7 @@ const LiveUpdates = () => {
                   )}
                   <CleanHTML html={selectedEvent?.details} />
                   <div className="flex items-center space-x-4">
+                    {/* Like Button */}
                     <Button
                       variant="ghost"
                       size="sm"
@@ -247,15 +249,78 @@ const LiveUpdates = () => {
                       <HeartIcon className={`w-4 h-4 ${isLiked ? "fill-current" : ""}`} />
                       <span className="hover:text-foreground">{selectedEvent?.likes.length}</span>
                     </Button>
+
+                    {/* Comment Button */}
                     <Button
                       variant="ghost"
                       size="sm"
-                      // onClick={handleCommentToggle}
                       className="flex items-center cursor-pointer space-x-2 text-muted-foreground hover:text-foreground"
                     >
                       <MessageCircleIcon className="w-4 h-4" />
                       <span>{selectedEvent?.comments.length}</span>
                     </Button>
+
+                    {/* Share Button */}
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="flex items-center cursor-pointer space-x-2 text-muted-foreground hover:text-foreground"
+                        >
+                          <Share2Icon className="w-4 h-4" />
+                          <span>Share</span>
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-48 flex flex-col space-y-2">
+                        <Button
+                          variant="ghost"
+                          className="justify-start text-sm"
+                          onClick={() =>
+                            window.open(
+                              `https://twitter.com/intent/tweet?url=${encodeURIComponent(window.location.href)}&text=${encodeURIComponent(selectedEvent?.title)}`,
+                              "_blank"
+                            )
+                          }
+                        >
+                          <TwitterIcon className="w-4 h-4 mr-2" /> Twitter
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          className="justify-start text-sm"
+                          onClick={() =>
+                            window.open(
+                              `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(window.location.href)}`,
+                              "_blank"
+                            )
+                          }
+                        >
+                          <LinkedinIcon className="w-4 h-4 mr-2" /> LinkedIn
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          className="justify-start text-sm"
+                          onClick={() =>
+                            window.open(
+                              `https://wa.me/?text=${encodeURIComponent(selectedEvent?.title + " " + window.location.href)}`,
+                              "_blank"
+                            )
+                          }
+                        >
+                          <MessageCircleIcon className="w-4 h-4 mr-2" /> WhatsApp
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          className="justify-start text-sm"
+                          onClick={() => {
+                            navigator.clipboard.writeText(window.location.href)
+                            toast({ description: "Link copied to clipboard!" })
+                          }}
+                        >
+                          <CopyIcon className="w-4 h-4 mr-2" /> Copy Link
+                        </Button>
+                      </PopoverContent>
+                    </Popover>
                   </div>
                   <div className="mt-4 space-y-3 border-t border-border pt-4">
                     {/* Comment input */}
