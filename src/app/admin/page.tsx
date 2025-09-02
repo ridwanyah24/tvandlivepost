@@ -20,7 +20,7 @@ import {
   Check
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useGenericMutationMutation, useGetAllCategoriesQuery, useGetAllEventsQuery, useGetAnalyticsQuery, useGetRecentUpdatesQuery, useGetRecentVideosQuery } from "@/slice/requestSlice";
+import { useGenericMutationMutation, useGetAllCategoriesQuery, useGetAllEventsQuery, useGetAnalyticsQuery, useGetEventUpdatesQuery, useGetRecentUpdatesQuery, useGetRecentVideosQuery } from "@/slice/requestSlice";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -35,6 +35,7 @@ import { editorStateToHTML } from "@/utils/checkHtml";
 import { LoadingModal } from "@/components/VideoCard";
 import { $generateNodesFromDOM } from "@lexical/html";
 import { $getRoot, $getSelection } from "lexical";
+import { update } from "lodash-es";
 
 
 
@@ -90,11 +91,13 @@ const Admin = () => {
   const [postUpdate, { isLoading: loading, isError: error, isSuccess: success }] = useGenericMutationMutation();
   const [eventId, setEventId] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [updateId, setUpdateId] = useState("");
   const { data: videoCategories, isLoading: loadingCategories, isError: errorGetCat } = useGetAllCategoriesQuery();
   const [endEvent, { isLoading: endingEvent, isError: errorEVent }] = useGenericMutationMutation();
   const { data: activeEvents, isLoading: loadingEvents, isError: eventsError } = useGetAllEventsQuery();
   const { data: analytics, isLoading: loadingAnalytics, isError: errorAnalytics } = useGetAnalyticsQuery();
   const { data: recentUpdates, isLoading: loadUpdates, isError: loadError } = useGetRecentUpdatesQuery();
+  const { data: allEventUpdates, isLoading: loadAllEventUpdates, isError: loadAllEventUpdatesError } = useGetEventUpdatesQuery({ limit: 10000000, offset: 0, id: eventId });
   const { data: recentVideos, isLoading: loadVideos, isError: loadvidError } = useGetRecentVideosQuery();
   const accessToken = useAppSelector(selectCurrentAdminAccess);
 
@@ -217,7 +220,29 @@ const Admin = () => {
       resetEventForm(
         {
           title: selectedEvent.title,
-         description: JSON.stringify(htmlToLexical(selectedEvent.details)), 
+          description: JSON.stringify(htmlToLexical(selectedEvent.details)),
+          image_file: undefined, // user may re-upload
+        },
+        {
+          keepDefaultValues: true, // ✅ ensures select isn't reset
+        }
+      );
+    }
+  };
+
+  const handleUpdateSelect = (id: string) => {
+    setUpdateId(id);
+
+    console.log(id);
+
+    const selectedUpdate = allEventUpdates.find((ev: any) => ev.id == id);
+    console.log(selectedUpdate);
+
+    if (selectedUpdate) {
+      resetUpdate(
+        {
+          title: selectedUpdate.title,
+          details: JSON.stringify(htmlToLexical(selectedUpdate.details)),
           image_file: undefined, // user may re-upload
         },
         {
@@ -300,6 +325,49 @@ const Admin = () => {
     postUpdate({
       url: `/admin/events/${eventId}/updates`,
       method: "POST",
+      body: formData,
+      invalidatesTags: [{ type: "updates" }]
+    }).unwrap().then(() => {
+      toast({
+        title: "Success",
+        description: "Update posted successfully!",
+      });
+    }).catch((error) => {
+      toast({
+        title: "Error",
+        description: error?.data?.message || "Failed to post Update.",
+        variant: "destructive",
+      });
+    });
+    resetUpdate();
+  };
+
+  const handleEditEventUpdate = (data: z.infer<typeof updateSchema>) => {
+    const formData = new FormData();
+    let htmlDescription = "";
+    try {
+      const parsedState = JSON.parse(data.details);
+      htmlDescription = editorStateToHTML(parsedState);
+      console.log(htmlDescription);
+
+    } catch (err) {
+      console.error("Failed to parse Lexical state", err);
+    }
+    formData.append("title", data.title);
+    formData.append("details", htmlDescription);
+
+    // Append the image file
+    if (data.image_file) {
+      formData.append("image_file", data.image_file);
+    }
+    // Trigger the mutation with FormData
+    for (const [key, value] of formData.entries()) {
+      console.log(key, value);
+    }
+
+    postUpdate({
+      url: `/admin/updates/${updateId}/`,
+      method: "PATCH",
       body: formData,
       invalidatesTags: [{ type: "updates" }]
     }).unwrap().then(() => {
@@ -934,10 +1002,10 @@ const Admin = () => {
             </Card>
           </TabsContent>
 
-          {/* Edit Events */}
+          {/* Edit Events & Updates */}
           <TabsContent value="editEvent" className="space-y-6">
             <div className="grid grid-cols-1 gap-6">
-              {/* Create Event */}
+              {/* Edit Event */}
               <Card>
                 <CardHeader>
                   <CardTitle>Edit Blog Post</CardTitle>
@@ -998,10 +1066,109 @@ const Admin = () => {
                   </form>
                 </CardContent>
               </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Edit Live Update</CardTitle>
+                </CardHeader>
+                <CardContent >
+                  <form onSubmit={handleSubmitUpdate(handleEditEventUpdate)} className="space-y-4">
+                    <div>
+                      <Label htmlFor="eventId">Select Blog Post</Label>
+                      <select
+                        id="eventId"
+                        // {...registerUpdate("eventId", { required: true })}
+                        onChange={(e) => {handleUpdateSelect(e.target.value) }}
+                        className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent"
+                      >
+                        <option value="">Choose a Live Post...</option>
+                        {activeEvents?.map((event: any) => (
+                          <option key={event.id} value={event.id}>
+                            {event.title}
+                          </option>
+                        ))}
+                      </select>
+                      {eventErrors.title && <p className="text-red-500 text-sm">Event is required</p>}
+                    </div>
+
+                    <div>
+                      <Label htmlFor="eventId">Select Blog Update</Label>
+                      <select
+                        id="eventId"
+                        // {...registerUpdate("eventId", { required: true })}
+                        onChange={(e) => { setEventId(e.target.value) }}
+                        className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent"
+                      >
+                        <option value="">Choose a Live Update...</option>
+                        {allEventUpdates?.map((update: any) => (
+                          <option key={update.id} value={update.id}>
+                            {update.title}
+                          </option>
+                        ))}
+                      </select>
+                      {updateErrors.title && <p className="text-red-500 text-sm">Update is required</p>}
+                    </div>
+
+                    <div>
+                      <Label htmlFor="update.title">Title of the Update</Label>
+                      <Input
+                        id="update.title"
+                        {...registerUpdate("title")}
+                        placeholder="Enter update title"
+                      />
+                      {updateErrors.title && (
+                        <p className="text-red-500 text-sm">{updateErrors.title.message}</p>
+                      )}
+                    </div>
+
+                    <div>
+                      <Label htmlFor="update.details">Details</Label>
+                      <Editor
+                        editorSerializedState={
+                          watch("details")
+                            ? JSON.parse(watch("details"))
+                            : undefined
+                        }
+                        onSerializedChange={(state: any) => {
+                          setValue("details", JSON.stringify(state), { shouldValidate: true });
+                        }}
+                      />
+                      {updateErrors.details && (
+                        <p className="text-red-500 text-sm">{updateErrors.details.message}</p>
+                      )}
+                    </div>
+
+                    <div>
+                      <Label htmlFor="image_file">Image (Optional)</Label>
+                      <Input
+                        id="image_file"
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            setValue("image_file", file, { shouldValidate: true });
+                          }
+                        }}
+                      />
+                      {updateErrors.image_file && (
+                        <p className="text-red-500 text-sm">{updateErrors.image_file.message}</p>
+                      )}
+                    </div>
+                    <Button
+                      type="submit"
+                      className="w-full bg-accent text-accent-foreground hover:bg-accent/90 cursor-pointer"
+                      disabled={loading}
+                    >
+                      {loading ? "Edit Update" : "Edit Update"}
+                    </Button>
+                  </form>
+                </CardContent>
+              </Card>
             </div>
           </TabsContent>
 
-          
+
 
         </Tabs>
         <LoadingModal open={uploading || loading} />
