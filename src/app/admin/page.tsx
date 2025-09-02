@@ -33,6 +33,9 @@ import { Command, CommandGroup, CommandItem } from "@/components/ui/command"
 import { Editor } from "@/components/blocks/editor-x/editor"
 import { editorStateToHTML } from "@/utils/checkHtml";
 import { LoadingModal } from "@/components/VideoCard";
+import { $generateNodesFromDOM } from "@lexical/html";
+import { $getRoot, $getSelection } from "lexical";
+
 
 
 const createEventSchema = z.object({
@@ -96,6 +99,16 @@ const Admin = () => {
   const accessToken = useAppSelector(selectCurrentAdminAccess);
 
   const router = useRouter();
+
+  const htmlToLexical = (html: string) => {
+    const parser = new DOMParser();
+    const dom = parser.parseFromString(html, "text/html");
+    return (editor: any) => {
+      const nodes = $generateNodesFromDOM(editor, dom);
+      $getRoot().clear();
+      $getRoot().append(...nodes);
+    };
+  };
 
   // Protect route
   useEffect(() => {
@@ -179,6 +192,76 @@ const Admin = () => {
         toast({
           title: "Success",
           description: "Event created successfully!",
+        });
+      })
+      .catch((error) => {
+        toast({
+          title: "Error",
+          description: error?.data?.message || "Failed to create event.",
+          variant: "destructive",
+        });
+      });
+    resetEventForm();
+  };
+
+  const handleEventSelect = (id: string) => {
+    setEventId(id);
+
+    console.log(id);
+
+
+    const selectedEvent = activeEvents.find((ev: any) => ev.id == id);
+    console.log(selectedEvent);
+
+    if (selectedEvent) {
+      resetEventForm(
+        {
+          title: selectedEvent.title,
+         description: JSON.stringify(htmlToLexical(selectedEvent.details)), 
+          image_file: undefined, // user may re-upload
+        },
+        {
+          keepDefaultValues: true, // ✅ ensures select isn't reset
+        }
+      );
+    }
+  };
+
+
+  const handleUpdateEvent = (data: z.infer<typeof createEventSchema>) => {
+    console.log(eventId);
+
+    const formData = new FormData();
+    let htmlDescription = "";
+    try {
+      const parsedState = JSON.parse(data.description);
+      htmlDescription = editorStateToHTML(parsedState);
+      console.log(htmlDescription);
+
+    } catch (err) {
+      console.error("Failed to parse Lexical state", err);
+    }
+    // Append the update object as a JSON string
+    formData.append("title", data.title);
+    formData.append("details", htmlDescription);
+    if (data.image_file) {
+      formData.append("image_file", data.image_file);
+    }
+
+    for (const [key, value] of formData.entries()) {
+      console.log(key, value);
+    }
+    createEvent({
+      url: `/admin/events/${eventId}`,
+      method: "PATCH",
+      body: formData,
+      invalidatesTags: [{ type: "events" }]
+    })
+      .unwrap()
+      .then(() => {
+        toast({
+          title: "Success",
+          description: "Event updated successfully!",
         });
       })
       .catch((error) => {
@@ -399,48 +482,7 @@ const Admin = () => {
     });
   };
 
-  // const handleUploadVideo = (data: z.infer<typeof uploadVideoSchema>) => {
-  //   const formData = new FormData();
 
-  //   formData.append("title", data.title);
-  //   formData.append("video_file", data.video_file);
-  //   formData.append("description", data.description);
-
-  //   data.category_ids.forEach((id) => {
-  //     formData.append("category_ids", String(id));
-  //   });
-
-  //   if (data.thumbnail) {
-  //     formData.append("thumbnail", data.thumbnail);
-  //   }
-
-  //   // Debug: log all form data entries
-  //   for (const [key, value] of formData.entries()) {
-  //     console.log(key, value);
-  //   }
-
-  //   uploadVideoMutation({
-  //     url: "/admin/videos",
-  //     method: "POST",
-  //     body: formData,
-  //   })
-  //     .unwrap()
-  //     .then(() => {
-  //       toast({
-  //         title: "Success",
-  //         description: "Video posted successfully!",
-  //       });
-  //     })
-  //     .catch((error) => {
-  //       toast({
-  //         title: "Error",
-  //         description: error?.data?.message || "Failed to post video.",
-  //         variant: "destructive",
-  //       });
-  //     });
-
-  //   resetVideo();
-  // };
 
   return (
     <div className="min-h-screen bg-background">
@@ -456,7 +498,7 @@ const Admin = () => {
 
         <Tabs defaultValue="events" className="space-y-6">
 
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 mb-6 border-b border-border">
             <TabsTrigger value="events" className="flex items-center space-x-2 cursor-pointer">
               <RadioIcon className="w-4 h-4" />
               <span>Add Blog</span>
@@ -472,6 +514,10 @@ const Admin = () => {
             <TabsTrigger value="analytics" className="flex items-center space-x-2 cursor-pointer">
               <EyeIcon className="w-4 h-4" />
               <span>View Analytics</span>
+            </TabsTrigger>
+            <TabsTrigger value="editEvent" className="flex items-center space-x-2 cursor-pointer">
+              <RadioIcon className="w-4 h-4" />
+              <span>Edit Event</span>
             </TabsTrigger>
           </TabsList>
 
@@ -887,6 +933,75 @@ const Admin = () => {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {/* Edit Events */}
+          <TabsContent value="editEvent" className="space-y-6">
+            <div className="grid grid-cols-1 gap-6">
+              {/* Create Event */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Edit Blog Post</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <form onSubmit={handleSubmitEvent(handleUpdateEvent)} className="space-y-4">
+                    <Label htmlFor="eventId">Select Blog Post</Label>
+                    <select
+                      id="eventId"
+                      // {...registerUpdate("eventId", { required: true })}
+                      onChange={(e) => { handleEventSelect(e.target.value) }}
+                      className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent"
+                    >
+                      <option value="">Choose a Live Post...</option>
+                      {activeEvents?.map((event: any) => (
+                        <option key={event.id} value={event.id}>
+                          {event.title}
+                        </option>
+                      ))}
+                    </select>
+
+                    <div>
+                      <Label htmlFor="event-title">Heading</Label>
+                      <Input id="event-title" {...registerEvent("title")} className="" />
+                      {eventErrors.title && <p className="text-sm text-red-500">{eventErrors.title.message}</p>}
+                    </div>
+                    <div>
+                      <Label htmlFor="event-description">Body</Label>
+                      <Editor
+                        editorSerializedState={
+                          watchEvent("description")
+                            ? JSON.parse(watchEvent("description"))
+                            : undefined
+                        }
+                        onSerializedChange={(state: any) => {
+                          setEventValue("description", JSON.stringify(state), { shouldValidate: true });
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="image_file">Cover Image</Label>
+                      <Input
+                        id="image_file"
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            setEventValue("image_file", file, { shouldValidate: true });
+                          }
+                        }}
+                      />
+                      {eventErrors.image_file && (
+                        <p className="text-red-500 text-sm">{eventErrors.image_file.message}</p>
+                      )}
+                    </div>
+                    <Button type="submit" className="cursor-pointer hover:bg-accent" disabled={isLoading}>Edit Blog</Button>
+                  </form>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          
 
         </Tabs>
         <LoadingModal open={uploading || loading} />
