@@ -100,7 +100,7 @@ const Admin = () => {
   const { data: allEventUpdates, isLoading: loadAllEventUpdates, isError: loadAllEventUpdatesError } = useGetEventUpdatesQuery({ limit: 10000000, offset: 0, id: eventId });
   const { data: recentVideos, isLoading: loadVideos, isError: loadvidError } = useGetRecentVideosQuery();
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
-  const { data: mockVideos, isLoading:laodingVideos } = useGetAllVideosQuery(selectedCategory === "all" ? {} : { category_ids: [parseInt(selectedCategory)] });
+  const { data: mockVideos, isLoading: laodingVideos } = useGetAllVideosQuery(selectedCategory === "all" ? {} : { category_ids: [parseInt(selectedCategory)] });
   const [videoId, setVideoId] = useState("");
 
   const accessToken = useAppSelector(selectCurrentAdminAccess);
@@ -413,7 +413,7 @@ const Admin = () => {
 
   const handleDeleteVideo = () => {
     if (!videoId) return;
-     postUpdate({
+    postUpdate({
       url: `/admin/videos/${videoId}/`,
       method: "DELETE",
       invalidatesTags: [{ type: "videos" }]
@@ -614,28 +614,33 @@ const Admin = () => {
 
         <Tabs defaultValue="events" className="space-y-6">
 
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 mb-6 border-b border-border">
-            <TabsTrigger value="events" className="flex items-center space-x-2 cursor-pointer">
+          <TabsList className="flex gap-2 mb-4 overflow-x-auto w-full no-scrollbar">
+            <TabsTrigger value="events" className="flex items-center space-x-2 cursor-pointer min-w-max">
               <RadioIcon className="w-4 h-4" />
               <span>Add Blog</span>
             </TabsTrigger>
-            <TabsTrigger value="updates" className="flex items-center space-x-2 cursor-pointer">
+
+            <TabsTrigger value="updates" className="flex items-center space-x-2 cursor-pointer min-w-max">
               <PlusIcon className="w-4 h-4" />
               <span>Live Updates</span>
             </TabsTrigger>
-            <TabsTrigger value="videos" className="flex items-center space-x-2 cursor-pointer">
+
+            <TabsTrigger value="videos" className="flex items-center space-x-2 cursor-pointer min-w-max">
               <TvIcon className="w-4 h-4" />
               <span>Post Videos</span>
             </TabsTrigger>
-            <TabsTrigger value="analytics" className="flex items-center space-x-2 cursor-pointer">
+
+            <TabsTrigger value="analytics" className="flex items-center space-x-2 cursor-pointer min-w-max">
               <EyeIcon className="w-4 h-4" />
               <span>View Analytics</span>
             </TabsTrigger>
-            <TabsTrigger value="editEvent" className="flex items-center space-x-2 cursor-pointer">
+
+            <TabsTrigger value="editEvent" className="flex items-center space-x-2 cursor-pointer min-w-max">
               <RadioIcon className="w-4 h-4" />
               <span>Edit Event & Updates</span>
             </TabsTrigger>
           </TabsList>
+
 
           {/* Events Tab */}
           <TabsContent value="events" className="space-y-6">
@@ -1033,7 +1038,7 @@ const Admin = () => {
                     <select
                       id="eventId"
                       // {...registerUpdate("eventId", { required: true })}
-                      onChange={(e) => {setVideoId(e.target.value) }}
+                      onChange={(e) => { setVideoId(e.target.value) }}
                       className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent"
                     >
                       <option value="">Choose a Video Title.</option>
