@@ -1,14 +1,10 @@
 'use client'
 import { useEffect, useState } from "react";
 import VideoCard from "@/components/VideoCard";
-import CustomVideoPlayer from "@/components/CustomVideoPlayer";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { TvIcon, TrendingUpIcon, XIcon, SendIcon } from "lucide-react";
 import { useGenericMutationMutation, useGetAllCategoriesQuery, useGetAllVideosQuery, useGetUpdateCommentsQuery, useGetVideoCommentsQuery } from "@/slice/requestSlice";
-import { Input } from "@/components/ui/input";
+
 import { toast } from "@/hooks/use-toast";
-import { timeSince } from "@/utils/formatDate";
 import { useRouter } from "next/navigation";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 

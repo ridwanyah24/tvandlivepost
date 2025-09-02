@@ -20,7 +20,7 @@ import {
   Check
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useGenericMutationMutation, useGetAllCategoriesQuery, useGetAllEventsQuery, useGetAnalyticsQuery, useGetEventUpdatesQuery, useGetRecentUpdatesQuery, useGetRecentVideosQuery } from "@/slice/requestSlice";
+import { useGenericMutationMutation, useGetAllCategoriesQuery, useGetAllEventsQuery, useGetAllVideosQuery, useGetAnalyticsQuery, useGetEventUpdatesQuery, useGetRecentUpdatesQuery, useGetRecentVideosQuery } from "@/slice/requestSlice";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -99,6 +99,10 @@ const Admin = () => {
   const { data: recentUpdates, isLoading: loadUpdates, isError: loadError } = useGetRecentUpdatesQuery();
   const { data: allEventUpdates, isLoading: loadAllEventUpdates, isError: loadAllEventUpdatesError } = useGetEventUpdatesQuery({ limit: 10000000, offset: 0, id: eventId });
   const { data: recentVideos, isLoading: loadVideos, isError: loadvidError } = useGetRecentVideosQuery();
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const { data: mockVideos, isLoading:laodingVideos } = useGetAllVideosQuery(selectedCategory === "all" ? {} : { category_ids: [parseInt(selectedCategory)] });
+  const [videoId, setVideoId] = useState("");
+
   const accessToken = useAppSelector(selectCurrentAdminAccess);
 
   const router = useRouter();
@@ -402,6 +406,28 @@ const Admin = () => {
       toast({
         title: "Error",
         description: error?.data?.message || "Failed to delete Update.",
+        variant: "destructive",
+      });
+    });
+  }
+
+  const handleDeleteVideo = () => {
+    if (!videoId) return;
+     postUpdate({
+      url: `/admin/videos/${videoId}/`,
+      method: "DELETE",
+      invalidatesTags: [{ type: "videos" }]
+    }).unwrap().then(() => {
+      toast({
+        title: "Success",
+        description: "Video deleted successfully!",
+      });
+      resetUpdate();
+      setUpdateId("");
+    }).catch((error) => {
+      toast({
+        title: "Error",
+        description: error?.data?.message || "Failed to delete Video.",
         variant: "destructive",
       });
     });
@@ -996,6 +1022,33 @@ const Admin = () => {
                   </div>
                 </CardContent>
               </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Delete Video</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <form onSubmit={handleSubmitEvent(handleUpdateEvent)} className="space-y-4">
+                    <Label htmlFor="eventId">Delete Video</Label>
+                    <select
+                      id="eventId"
+                      // {...registerUpdate("eventId", { required: true })}
+                      onChange={(e) => {setVideoId(e.target.value) }}
+                      className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent"
+                    >
+                      <option value="">Choose a Video Title.</option>
+                      {mockVideos?.map((event: any) => (
+                        <option key={event.id} value={event.id}>
+                          {event.title}
+                        </option>
+                      ))}
+                    </select>
+
+                    <Button className="cursor-pointer hover:bg-accent" disabled={isLoading} onClick={handleDeleteVideo}>Delete Video</Button>
+                  </form>
+                </CardContent>
+              </Card>
+
             </div>
           </TabsContent>
 
@@ -1118,7 +1171,7 @@ const Admin = () => {
                       <select
                         id="eventId"
                         // {...registerUpdate("eventId", { required: true })}
-                        onChange={(e) => {handleUpdateSelect(e.target.value) }}
+                        onChange={(e) => { handleUpdateSelect(e.target.value) }}
                         className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent"
                       >
                         <option value="">Choose a Live Update...</option>
@@ -1177,7 +1230,7 @@ const Admin = () => {
                         <p className="text-red-500 text-sm">{updateErrors.image_file.message}</p>
                       )}
                     </div>
-                    <div  className="flex  gap-2 items-center">
+                    <div className="flex  gap-2 items-center">
                       <Button
                         type="submit"
                         className="w-full bg-background text-accent-foreground hover:bg-accent/30 cursor-pointer"
@@ -1185,7 +1238,7 @@ const Admin = () => {
                       >
                         {loading ? "Edit Update" : "Edit Update"}
                       </Button>
-                      <Button onClick={handleDeleteEventUpdate} variant="destructive"  className="w-full bg-accent text-accent-foreground hover:bg- cursor-pointer">
+                      <Button onClick={handleDeleteEventUpdate} variant="destructive" className="w-full bg-accent text-accent-foreground hover:bg- cursor-pointer">
                         Delete Update
                       </Button>
                     </div>
