@@ -18,7 +18,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "BlaccTheddiLiveUpdatesAndTv",
-  description: "Developed by RidDev",
+  description: "by MadeInBlacc",
 };
 
 export default function RootLayout({

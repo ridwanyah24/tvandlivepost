@@ -34,7 +34,6 @@ interface LiveUpdateCardProps {
 }
 
 
-
 const LiveUpdateCard = ({ update, onLike, onComment }: LiveUpdateCardProps) => {
   const [postComment] = useGenericMutationMutation();
   const [likeUpdate] = useGenericMutationMutation();
