@@ -612,34 +612,36 @@ const Admin = () => {
           <p className="text-muted-foreground">Manage events, updates, and videos</p>
         </div>
 
-        <Tabs defaultValue="events" className="space-y-6">
+        <Tabs defaultValue="events" className="w-full">
 
-          <TabsList className="flex gap-2 mb-4 overflow-x-auto w-full no-scrollbar">
-            <TabsTrigger value="events" className="flex items-center space-x-2 cursor-pointer min-w-max">
-              <RadioIcon className="w-4 h-4" />
-              <span>Add Blog</span>
-            </TabsTrigger>
+          <div className="mb-4 overflow-x-auto no-scrollbar w-full">
+            <TabsList className="lg:grid lg:grid-cols-5 ">
+              <TabsTrigger value="events" className="flex items-center cursor-pointer  w-full">
+                <RadioIcon className="w-4 h-4" />
+                <span>Add Blog</span>
+              </TabsTrigger>
 
-            <TabsTrigger value="updates" className="flex items-center space-x-2 cursor-pointer min-w-max">
-              <PlusIcon className="w-4 h-4" />
-              <span>Live Updates</span>
-            </TabsTrigger>
+              <TabsTrigger value="updates" className="flex items-center space-x-2 cursor-pointer w-full">
+                <PlusIcon className="w-4 h-4" />
+                <span>Live Updates</span>
+              </TabsTrigger>
 
-            <TabsTrigger value="videos" className="flex items-center space-x-2 cursor-pointer min-w-max">
-              <TvIcon className="w-4 h-4" />
-              <span>Post Videos</span>
-            </TabsTrigger>
+              <TabsTrigger value="videos" className="flex items-center space-x-2 cursor-pointer w-full">
+                <TvIcon className="w-4 h-4" />
+                <span>Post Videos</span>
+              </TabsTrigger>
 
-            <TabsTrigger value="analytics" className="flex items-center space-x-2 cursor-pointer min-w-max">
-              <EyeIcon className="w-4 h-4" />
-              <span>View Analytics</span>
-            </TabsTrigger>
+              <TabsTrigger value="analytics" className="flex items-center space-x-2 cursor-pointer w-full">
+                <EyeIcon className="w-4 h-4" />
+                <span>View Analytics</span>
+              </TabsTrigger>
 
-            <TabsTrigger value="editEvent" className="flex items-center space-x-2 cursor-pointer min-w-max">
-              <RadioIcon className="w-4 h-4" />
-              <span>Edit Event & Updates</span>
-            </TabsTrigger>
-          </TabsList>
+              <TabsTrigger value="editEvent" className="flex items-center space-x-2 cursor-pointer w-full ">
+                <RadioIcon className="w-4 h-4" />
+                <span>Edit Event & Updates</span>
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
 
           {/* Events Tab */}
