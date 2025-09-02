@@ -385,6 +385,28 @@ const Admin = () => {
     resetUpdate();
   };
 
+  const handleDeleteEventUpdate = () => {
+    if (!updateId) return;
+    postUpdate({
+      url: `/admin/updates/${updateId}/`,
+      method: "DELETE",
+      invalidatesTags: [{ type: "updates" }]
+    }).unwrap().then(() => {
+      toast({
+        title: "Success",
+        description: "Update deleted successfully!",
+      });
+      resetUpdate();
+      setUpdateId("");
+    }).catch((error) => {
+      toast({
+        title: "Error",
+        description: error?.data?.message || "Failed to delete Update.",
+        variant: "destructive",
+      });
+    });
+  }
+
   function safeKey(filename: string) {
     return filename
       .normalize("NFKD") // normalize unicode
@@ -585,7 +607,7 @@ const Admin = () => {
             </TabsTrigger>
             <TabsTrigger value="editEvent" className="flex items-center space-x-2 cursor-pointer">
               <RadioIcon className="w-4 h-4" />
-              <span>Edit Event</span>
+              <span>Edit Event & Updates</span>
             </TabsTrigger>
           </TabsList>
 
@@ -1078,7 +1100,7 @@ const Admin = () => {
                       <select
                         id="eventId"
                         // {...registerUpdate("eventId", { required: true })}
-                        onChange={(e) => {handleUpdateSelect(e.target.value) }}
+                        onChange={(e) => { setEventId(e.target.value) }}
                         className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent"
                       >
                         <option value="">Choose a Live Post...</option>
@@ -1096,13 +1118,13 @@ const Admin = () => {
                       <select
                         id="eventId"
                         // {...registerUpdate("eventId", { required: true })}
-                        onChange={(e) => { setEventId(e.target.value) }}
+                        onChange={(e) => {handleUpdateSelect(e.target.value) }}
                         className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent"
                       >
                         <option value="">Choose a Live Update...</option>
-                        {allEventUpdates?.map((update: any) => (
-                          <option key={update.id} value={update.id}>
-                            {update.title}
+                        {allEventUpdates?.map((event: any) => (
+                          <option key={event.id} value={event.id}>
+                            {event.title}
                           </option>
                         ))}
                       </select>
@@ -1155,16 +1177,23 @@ const Admin = () => {
                         <p className="text-red-500 text-sm">{updateErrors.image_file.message}</p>
                       )}
                     </div>
-                    <Button
-                      type="submit"
-                      className="w-full bg-accent text-accent-foreground hover:bg-accent/90 cursor-pointer"
-                      disabled={loading}
-                    >
-                      {loading ? "Edit Update" : "Edit Update"}
-                    </Button>
+                    <div  className="flex  gap-2 items-center">
+                      <Button
+                        type="submit"
+                        className="w-full bg-background text-accent-foreground hover:bg-accent/30 cursor-pointer"
+                        disabled={loading}
+                      >
+                        {loading ? "Edit Update" : "Edit Update"}
+                      </Button>
+                      <Button onClick={handleDeleteEventUpdate} variant="destructive"  className="w-full bg-accent text-accent-foreground hover:bg- cursor-pointer">
+                        Delete Update
+                      </Button>
+                    </div>
+
                   </form>
                 </CardContent>
               </Card>
+
             </div>
           </TabsContent>
 
