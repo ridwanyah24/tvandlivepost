@@ -211,6 +211,7 @@ const Admin = () => {
     resetEventForm();
   };
 
+
   const handleEventSelect = (id: string) => {
     setEventId(id);
 
@@ -233,6 +234,7 @@ const Admin = () => {
       );
     }
   };
+
 
   const handleUpdateSelect = (id: string) => {
     setUpdateId(id);
@@ -303,6 +305,7 @@ const Admin = () => {
     resetEventForm();
   };
 
+
   const handleCreateUpdate = (data: z.infer<typeof updateSchema>) => {
     const formData = new FormData();
     let htmlDescription = "";
@@ -345,6 +348,7 @@ const Admin = () => {
     });
     resetUpdate();
   };
+
 
   const handleEditEventUpdate = (data: z.infer<typeof updateSchema>) => {
     const formData = new FormData();
@@ -389,6 +393,7 @@ const Admin = () => {
     resetUpdate();
   };
 
+
   const handleDeleteEventUpdate = () => {
     if (!updateId) return;
     postUpdate({
@@ -411,6 +416,7 @@ const Admin = () => {
     });
   }
 
+
   const handleDeleteVideo = () => {
     if (!videoId) return;
     postUpdate({
@@ -432,6 +438,7 @@ const Admin = () => {
       });
     });
   }
+
 
   function safeKey(filename: string) {
     return filename
@@ -1256,7 +1263,6 @@ const Admin = () => {
 
             </div>
           </TabsContent>
-
 
 
         </Tabs>

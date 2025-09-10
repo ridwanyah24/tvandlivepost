@@ -18,13 +18,14 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 
 export function CleanHTML({ html }: { html: string }) {
   const clean = DOMPurify.sanitize(html, {
-    FORBID_ATTR: ["style", "width", "height", "cellpadding", "cellspacing", "span"],
-    FORBID_TAGS: ["colgroup", "col", "span", "paragraph"], // remove unnecessary table width stuff
+    FORBID_ATTR: ["style", "width", "height", "cellpadding", "cellspacing", "class"],
+    FORBID_TAGS: ["colgroup", "col", "span", "paragraph"],
+    ADD_TAGS: ["iframe"], // ✅ allow iframe
+    ADD_ATTR: ["allow", "allowfullscreen", "frameborder", "src", "title"] // ✅ allow iframe attributes
   });
 
   return <div dangerouslySetInnerHTML={{ __html: clean }} />;
 }
-
 
 export function cleanHTMLToString(html: string): string {
   if (!html) return "";
@@ -217,7 +218,6 @@ const LiveUpdates = () => {
                     <Badge variant="destructive" className="bg-accent text-accent-foreground">
                       LIVE
                     </Badge>
-
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="flex flex-col gap-5">
