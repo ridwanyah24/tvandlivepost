@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_2" data-name="Layer 2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 788.42 108.55">
+  <defs>
+    <style>
+      .cls-1 {
+        font-family: PPEditorialNew-Italic, 'PP Editorial New';
+        font-style: italic;
+      }
+
+      .cls-2, .cls-3 {
+        fill: #231f20;
+      }
+
+      .cls-3 {
+        font-size: 71.18px;
+      }
+
+      .cls-4 {
+        font-family: DrukWide-Bold, 'Druk Wide Bold';
+        font-weight: 700;
+      }
+
+      .cls-5 {
+        fill: #981e0b;
+      }
+    </style>
+  </defs>
+  <g id="Layer_1-2" data-name="Layer 1">
+    <g>
+      <circle class="cls-5" cx="57.25" cy="74.94" r="23.72"/>
+      <text class="cls-3" transform="translate(95.58 82.89)"><tspan class="cls-4" x="0" y="0">laccTheddi</tspan><tspan class="cls-1" x="565.77" y="0">Post</tspan></text>
+      <path class="cls-2" d="M75.06,46.22c-1.19-.82-2.61-1.29-3.68-2.29-.14-.47,1.27-2.2,1.6-2.81,9.83-18.11-.6-38.66-20.86-41.12L7.55.02C3.37.02,0,3.41,0,7.58l.16,93.43c0,4.16,3.38,7.54,7.55,7.54h52.14c31.79-3.78,42.03-43.89,15.21-62.32ZM25.62,40.61c-1.07.06-2.19.45-3.33.26v54.29h-8.93V13.6h38.55c1.48,0,5.62,2.29,6.82,3.35,8.77,7.68,3.94,22.61-7.57,23.67-8.07.74-17.29-.43-25.54,0ZM74.38,84.67c-8.3,14.97-30.51,13.87-37.02-1.98-5.33-12.99,3.52-27.72,17.59-28.6,16.14-1.01,27.32,16.32,19.43,30.58Z"/>
+    </g>
+  </g>
+</svg>

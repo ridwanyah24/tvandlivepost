@@ -20,7 +20,7 @@ export function CleanHTML({ html }: { html: string }) {
   const clean = DOMPurify.sanitize(html, {
     FORBID_ATTR: ["style", "width", "height", "cellpadding", "cellspacing", "class"],
     FORBID_TAGS: ["colgroup", "col", "span", "paragraph"],
-    ADD_TAGS: ["iframe"], // ✅ allow iframe
+    ADD_TAGS: ["iframe"], // allow iframe
     ADD_ATTR: ["allow", "allowfullscreen", "frameborder", "src", "title"] // ✅ allow iframe attributes
   });
 
@@ -201,7 +201,7 @@ const LiveUpdates = () => {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8 space-y-10">
-        <h1 className="lg:text-2xl text-lg font-semibold capitalize">Live Blog</h1>
+        <h1 className="lg:text-2xl text-lg font-semibold capitalize">Live Post</h1>
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
 
           {/* Main Content */}
@@ -220,7 +220,7 @@ const LiveUpdates = () => {
                     </Badge>
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="flex flex-col gap-5">
+                <CardContent className="flex flex-col gap-5 text-[17px]">
                   <div className="flex items-center space-x-6 text-muted-foreground">
                     <div className="flex items-center">
                       <ClockIcon className="w-4 h-4 mr-2" />

@@ -83,7 +83,7 @@ const TV = () => {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground mb-2 flex items-center">
             <TvIcon className="w-8 h-8 mr-3 text-accent" />
-            Blacctheddi TV
+          Tv Post
           </h1>
           <p className="text-muted-foreground">Watch the latest videos and broadcasts</p>
         </div>

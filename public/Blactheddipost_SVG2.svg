@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_2" data-name="Layer 2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 788.1 108.55">
+  <defs>
+    <style>
+      .cls-1 {
+        font-family: PPEditorialNew-Italic, 'PP Editorial New';
+        font-style: italic;
+      }
+
+      .cls-2 {
+        font-family: DrukWide-Bold, 'Druk Wide Bold';
+        font-weight: 700;
+      }
+
+      .cls-3 {
+        font-size: 71.18px;
+      }
+
+      .cls-3, .cls-4 {
+        fill: #1a1a1a;
+      }
+    </style>
+  </defs>
+  <g id="Layer_1-2" data-name="Layer 1">
+    <g>
+      <text class="cls-3" transform="translate(95.26 82.89)"><tspan class="cls-2" x="0" y="0">laccTheddi</tspan><tspan class="cls-1" x="565.77" y="0">Post</tspan></text>
+      <path class="cls-4" d="M75.06,46.22c-1.19-.82-2.61-1.29-3.68-2.29-.14-.47,1.27-2.2,1.6-2.81,9.83-18.11-.6-38.66-20.86-41.12L7.55.02C3.37.02,0,3.41,0,7.58l.16,93.43c0,4.16,3.38,7.54,7.55,7.54h52.14c31.79-3.78,42.03-43.89,15.21-62.32ZM25.62,40.61c-1.07.06-2.19.45-3.33.26v54.29h-8.93V13.6h38.55c1.48,0,5.62,2.29,6.82,3.35,8.77,7.68,3.94,22.61-7.57,23.67-8.07.74-17.29-.43-25.54,0Z"/>
+    </g>
+  </g>
+</svg>

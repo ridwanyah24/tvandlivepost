@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { RadioIcon, TvIcon, SettingsIcon, MenuIcon, XIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import Image from "next/image";
 
 const Navigation = () => {
   const pathname = usePathname();
@@ -27,11 +28,11 @@ const Navigation = () => {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center">
-              <RadioIcon className="w-5 h-5 text-accent-foreground" />
-              {/* <Image src="/blacctheddi.jpg" alt="logo" width={50} height={50}/> */}
+            <div className="bg-accent rounded-lg flex items-center justify-center gap-x-5">
+              {/* <RadioIcon className="w-5 h-5 text-accent-foreground" /> */}
+              <Image src="/blacctheddi.jpg" alt="logo" width={20} height={10}/>
             </div>
-            <span className="text-xl font-bold text-foreground">Blacctheddi</span>
+            <span className="text-xl font-bold text-foreground">BlaccTheddiPost</span>
           </Link>
 
           {/* Desktop Navigation */}
