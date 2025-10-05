@@ -124,7 +124,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
                       alt={updateEvent.title}
                       width={300}
                       height={100}
-                      className="w-full h-[400px]"
+                      className="w-full max-h-[700px]"
                     />
                   </div>
                 )}

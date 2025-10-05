@@ -220,7 +220,7 @@ const LiveUpdates = () => {
                     </Badge>
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="flex flex-col gap-5 text-[17px]">
+                <CardContent className="flex flex-col gap-5 text-[17px]/[1.5]">
                   <div className="flex items-center space-x-6 text-muted-foreground">
                     <div className="flex items-center">
                       <ClockIcon className="w-4 h-4 mr-2" />
