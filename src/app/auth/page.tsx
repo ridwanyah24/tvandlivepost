@@ -119,7 +119,7 @@ export default function Page() {
               }}
             />
             <p className="text-accent font-medium text-md underline cursor-pointer" onClick={() => router.push("/auth/changePasswd")}>Change Password</p>
-            <Button type="submit" className="w-full cursor-pointer hover:bg-accent" disabled={isLoading} >
+            <Button type="submit" className="w-full cursor-pointer bg-accent" disabled={isLoading} >
               {isLoading ? "Logging in..." : "Login"}
             </Button>
           </form>

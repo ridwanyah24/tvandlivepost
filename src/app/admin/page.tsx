@@ -697,7 +697,7 @@ const Admin = () => {
                         <p className="text-red-500 text-sm">{eventErrors.image_file.message}</p>
                       )}
                     </div>
-                    <Button type="submit" className="cursor-pointer hover:bg-accent" disabled={isLoading}>Post Blog</Button>
+                    <Button type="submit" className="cursor-pointer bg-accent" disabled={isLoading}>Post Blog</Button>
                   </form>
                 </CardContent>
               </Card>
@@ -1058,7 +1058,7 @@ const Admin = () => {
                       ))}
                     </select>
 
-                    <Button className="cursor-pointer hover:bg-accent" disabled={isLoading} onClick={handleDeleteVideo}>Delete Video</Button>
+                    <Button className="cursor-pointer bg-accent" disabled={isLoading} onClick={handleDeleteVideo}>Delete Video</Button>
                   </form>
                 </CardContent>
               </Card>
@@ -1151,7 +1151,7 @@ const Admin = () => {
                         <p className="text-red-500 text-sm">{eventErrors.image_file.message}</p>
                       )}
                     </div>
-                    <Button type="submit" className="cursor-pointer hover:bg-accent" disabled={isLoading}>Edit Blog</Button>
+                    <Button type="submit" className="cursor-pointer bg-accent" disabled={isLoading}>Edit Blog</Button>
                   </form>
                 </CardContent>
               </Card>
@@ -1247,7 +1247,7 @@ const Admin = () => {
                     <div className="flex  gap-2 items-center">
                       <Button
                         type="submit"
-                        className="w-full bg-background text-accent-foreground hover:bg-accent/30 cursor-pointer"
+                        className="w-full border border-accent bg-white text-accent hover:bg-accent/30 cursor-pointer"
                         disabled={loading}
                       >
                         {loading ? "Edit Update" : "Edit Update"}

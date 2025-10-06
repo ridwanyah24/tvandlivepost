@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { SendIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
-import { CleanHTML, cleanHTMLToString,} from "@/components/liveUpdates/liveupdates";
+import { CleanHTML, cleanHTMLToString, } from "@/components/liveUpdates/liveupdates";
 
 export default function Page({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -113,46 +113,6 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
               </Button>
             </div>
 
-            {/* Event Preview Moved Below Main Update */}
-            {updateEvent &&
-              <div className="mt-10 flex flex-col  gap-4">
-                {/* Image Section */}
-                {updateEvent.image_url && (
-                  <div className="w-full md:h-auto overflow-hidden rounded-md">
-                    <img
-                      src={updateEvent.image_url}
-                      alt={updateEvent.title}
-                      width={300}
-                      height={100}
-                      className="w-full max-h-[700px]"
-                    />
-                  </div>
-                )}
-
-                {/* Text Section */}
-                <div className="flex-1">
-                  <h2 className="text-xl font-semibold mb-2">{updateEvent.title}</h2>
-                  <p className="text-sm text-muted-foreground">
-                    {format(new Date(updateEvent.timestamp), "PPPpp")}
-                  </p>
-
-                  {/* Description with toggle */}
-                  <p>
-                    {displayedText}
-                    {isTruncated && !expanded && "..."}
-                    {isTruncated && (
-                      <button
-                        onClick={()=>setExpanded(!expanded)}
-                        className="text-accent cursor-pointer  ml-1 hover:underline text-sm"
-                      >
-                        {expanded ? "View less" : "View more"}
-                      </button>
-                    )}
-                  </p>
-                </div>
-              </div>
-            }
-
             {/* Comments */}
             {isCommenting && (
               <div className="mt-6 space-y-3 border-t border-border pt-4">
@@ -182,6 +142,48 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
                 </div>
               </div>
             )}
+
+            {/* Event Preview Moved Below Main Update */}
+            {updateEvent &&
+              <div className="mt-10 flex flex-col  gap-4">
+                {/* Image Section */}
+                {/* {updateEvent.image_url && (
+                  <div className="w-full md:h-auto overflow-hidden rounded-md">
+                    <img
+                      src={updateEvent.image_url}
+                      alt={updateEvent.title}
+                      width={300}
+                      height={100}
+                      className="w-full max-h-[700px]"
+                    />
+                  </div>
+                )} */}
+
+                {/* Text Section */}
+                <div className="flex-1">
+                  <h2 className="text-xl font-semibold mb-2">{updateEvent.title}</h2>
+                  <p className="text-sm text-muted-foreground">
+                    {format(new Date(updateEvent.timestamp), "PPPpp")}
+                  </p>
+
+                  {/* Description with toggle */}
+                  <p>
+                    {displayedText}
+                    {isTruncated && !expanded && "..."}
+                    {isTruncated && (
+                      <button
+                        onClick={() => setExpanded(!expanded)}
+                        className="text-accent cursor-pointer  ml-1 hover:underline text-sm"
+                      >
+                        {expanded ? "View less" : "View more"}
+                      </button>
+                    )}
+                  </p>
+                </div>
+              </div>
+            }
+
+
           </div>
 
           {/* Right Column: Related Updates */}

@@ -124,7 +124,7 @@ export default function Page() {
 
                         <Button
                             type="submit"
-                            className="w-full cursor-pointer hover:bg-accent"
+                            className="w-full cursor-pointer bg-accent"
                             disabled={isLoading}
                         >
                             {isLoading ? "Changing Password..." : "Change Password"}

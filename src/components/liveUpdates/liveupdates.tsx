@@ -261,9 +261,9 @@ const LiveUpdates = () => {
                 {/* Updates integrated below */}
                 {loadedUpdates?.length > 0 && (
                   <section className="space-y-8 mt-10">
-                    <h3 className="text-xl font-semibold border-l-4 border-red-600 pl-3">
+                    {/* <h3 className="text-xl font-semibold border-l-4 border-red-600 pl-3">
                       Live Updates
-                    </h3>
+                    </h3> */}
                     {loadedUpdates.map((update: any) => (
                       <LiveUpdateCard
                         key={update.id}
