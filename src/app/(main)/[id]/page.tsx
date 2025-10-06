@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { SendIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
-import { CleanHTML, cleanHTMLToString } from "@/components/liveUpdates/liveupdates";
+import { CleanHTML, cleanHTMLToString,} from "@/components/liveUpdates/liveupdates";
 
 export default function Page({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -163,7 +163,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
                     value={newComment}
                     onChange={(e) => setNewComment(e.target.value)}
                   />
-                  <Button size="sm" className="cursor-pointer bg-accent" onClick={handleAddComment}>
+                  <Button size="sm" className="cursor-pointer bg-accent hover:bg-red-700" onClick={handleAddComment}>
                     <SendIcon />
                   </Button>
                 </div>
