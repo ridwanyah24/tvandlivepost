@@ -190,8 +190,8 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
           <div className="w-full lg:w-1/3">
             <h3 className="text-lg font-semibold mb-4 mt-10">Recent Updates</h3>
             <div className="space-y-4">
-              {relatedUpdates?.map((update: any) => (
-                <div key={update.id} className="border rounded-md bg-muted shadow-sm p-2">
+              {relatedUpdates?.slice().reverse().map((update: any) => (
+                <div key={update.id} className="border rounded-md bg-muted shadow-sm p-2" onClick={() => router.push(`/${update.id}`)}>
                   {update.image_url && (
                     <Image
                       src={update.image_url}
@@ -199,7 +199,6 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
                       width={400}
                       height={100}
                       className="object-fit w-full h-[250px] rounded mb-2 cursor-pointer"
-                      onClick={() => router.push(`/${update.id}`)}
                     />
                   )}
                   <div className="flex items-center gap-2 text-xs mb-1">
