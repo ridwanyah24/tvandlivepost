@@ -73,7 +73,9 @@ const uploadVideoSchema = z.object({
     .refine((file) => file.size > 0, { message: "Thumbnail is required" })
     .refine((file) => file.type.startsWith("image/"), {
       message: "Thumbnail must be an image file",
-    }),
+    })
+    .optional()
+    .or(z.literal("").transform(() => undefined)), // Allow empty or undefined
   video_file: z
     .instanceof(File)
     .refine((file) => file.size > 0, { message: "Video file is required" })
@@ -83,6 +85,7 @@ const uploadVideoSchema = z.object({
   description: z.string(),
   category_ids: z.array(z.number()).min(1),
 });
+
 
 
 const Admin = () => {
