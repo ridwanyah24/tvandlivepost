@@ -227,7 +227,9 @@ const LiveUpdates = () => {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-10">
           {/* Main Content */}
           <div className="lg:col-span-3 space-y-8">
-            {!selectedEvent && <p>No Events to show</p>}
+
+            {isLoading && <p>Loading Posts </p>}
+            {/* {!selectedEvent && <p>No Events to show</p>} */}
 
             {selectedEvent && (
               <article className="space-y-6">
