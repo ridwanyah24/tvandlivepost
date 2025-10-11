@@ -7,9 +7,10 @@ import { useGenericMutationMutation, useGetSingleEventQuery, useGetSingleUpdateQ
 import { timeSince } from "@/utils/formatDate";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
-import { SendIcon } from "lucide-react";
+import { SendIcon, HeartIcon, Share2Icon, MessageCircleIcon, TwitterIcon, LinkedinIcon, CopyIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CleanHTML, cleanHTMLToString, } from "@/components/liveUpdates/liveupdates";
 
 export default function Page({ params }: { params: Promise<{ id: string }> }) {
@@ -20,9 +21,11 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
   const { data: updateComments } = useGetUpdateCommentsQuery({ id });
   const [postComment] = useGenericMutationMutation();
   const { data: updateEvent } = useGetSingleEventQuery({ id: singleUpdate?.event_id });
-  const [showFull, setShowFull] = useState(false);
   const [newComment, setNewComment] = useState("");
   const [isCommenting, setIsCommenting] = useState(true);
+  const [likeUpdate] = useGenericMutationMutation();
+  const [likeId, setLikeId] = useState<number | null>(null);
+  const [isLiked, setIsLiked] = useState(false);
 
   const [expanded, setExpanded] = useState(false);
   const maxLength = 200;
@@ -64,6 +67,35 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
     }
   };
 
+  const handleLike = () => {
+    if (!singleUpdate?.id) return;
+
+    const method = isLiked ? "DELETE" : "POST";
+    const url = isLiked ? `/likes/${likeId}` : `/updates/${singleUpdate?.id}/likes`;
+
+    likeUpdate({
+      url,
+      method,
+      invalidatesTags: [{ type: "updates" }, { type: "update-comments" }],
+    })
+      .unwrap()
+      .then((res) => {
+        if (!isLiked && res?.id) {
+          setLikeId(res.id);
+        } else if (isLiked) {
+          setLikeId(null);
+        }
+        setIsLiked(!isLiked);
+      })
+      .catch((error) => {
+        toast({
+          title: "Error",
+          description: error?.data?.message || "Failed to toggle like.",
+          variant: "destructive",
+        });
+      });
+  };
+
   if (isLoading) return <p className="p-4"></p>;
   if (error || !singleUpdate) return <p className="p-4"></p>;
 
@@ -94,6 +126,78 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
               {/* <p>{singleUpdate.details}</p> */}
               <CleanHTML html={singleUpdate?.details} />
             </div>
+
+            {/* Interaction Section */}
+            <section className="border-t border-border pt-6 space-y-4 mb-6">
+              <div className="flex items-center space-x-4">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleLike}
+                  className={`flex items-center space-x-2 ${isLiked ? "text-red-600" : "text-gray-500 hover:text-gray-800"
+                    }`}
+                >
+                  <HeartIcon className={`w-4 h-4 ${isLiked ? "fill-current" : ""}`} />
+                  <span>{singleUpdate?.likes?.length || 0}</span>
+                </Button>
+
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="flex items-center text-gray-500 hover:text-gray-800"
+                  onClick={() => setIsCommenting(!isCommenting)}
+                >
+                  <MessageCircleIcon className="w-4 h-4 mr-1" /> 
+                  {updateComments?.length || 0}
+                </Button>
+
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="ghost" size="sm" className="flex items-center text-gray-500 hover:text-gray-800">
+                      <Share2Icon className="w-4 h-4 mr-1" /> Share
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-48 flex flex-col space-y-2">
+                    <Button
+                      variant="ghost"
+                      className="justify-start text-sm"
+                      onClick={() =>
+                        window.open(
+                          `https://twitter.com/intent/tweet?url=${encodeURIComponent(window.location.href)}&text=${encodeURIComponent(singleUpdate?.title)}`,
+                          "_blank"
+                        )
+                      }
+                    >
+                      <TwitterIcon className="w-4 h-4 mr-2" /> Twitter
+                    </Button>
+
+                    <Button
+                      variant="ghost"
+                      className="justify-start text-sm"
+                      onClick={() =>
+                        window.open(
+                          `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(window.location.href)}`,
+                          "_blank"
+                        )
+                      }
+                    >
+                      <LinkedinIcon className="w-4 h-4 mr-2" /> LinkedIn
+                    </Button>
+
+                    <Button
+                      variant="ghost"
+                      className="justify-start text-sm"
+                      onClick={() => {
+                        navigator.clipboard.writeText(window.location.href);
+                        toast({ description: "Link copied to clipboard!" });
+                      }}
+                    >
+                      <CopyIcon className="w-4 h-4 mr-2" /> Copy Link
+                    </Button>
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </section>
 
             {/* Navigation Buttons */}
             <div className="flex justify-between mb-10">
@@ -202,9 +306,8 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
                     />
                   )}
                   <div className="flex items-center gap-2 text-xs mb-1">
-
                     <span className="text-muted-foreground">
-                      {update.comments?.length || 0} updates
+                      {timeSince(update.timestamp)}
                     </span>
                   </div>
                   <p
