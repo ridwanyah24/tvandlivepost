@@ -53,6 +53,7 @@ import { FloatingLinkEditorPlugin } from "@/components/editor/plugins/floating-l
 import { FloatingTextFormatToolbarPlugin } from "@/components/editor/plugins/floating-text-format-plugin"
 import { ImagesPlugin } from "@/components/editor/plugins/images-plugin"
 import { InlineImagePlugin } from "@/components/editor/plugins/inline-image-plugin"
+import { VideosPlugin } from "@/components/editor/plugins/videos-plugin"
 import { KeywordsPlugin } from "@/components/editor/plugins/keywords-plugin"
 import { LayoutPlugin } from "@/components/editor/plugins/layout-plugin"
 import { LinkPlugin } from "@/components/editor/plugins/link-plugin"
@@ -101,6 +102,7 @@ import { InsertExcalidraw } from "@/components/editor/plugins/toolbar/block-inse
 import { InsertHorizontalRule } from "@/components/editor/plugins/toolbar/block-insert/insert-horizontal-rule"
 import { InsertImage } from "@/components/editor/plugins/toolbar/block-insert/insert-image"
 import { InsertInlineImage } from "@/components/editor/plugins/toolbar/block-insert/insert-inline-image"
+import { InsertVideo } from "@/components/editor/plugins/toolbar/block-insert/insert-video"
 import { InsertPageBreak } from "@/components/editor/plugins/toolbar/block-insert/insert-page-break"
 import { InsertPoll } from "@/components/editor/plugins/toolbar/block-insert/insert-poll"
 import { InsertTable } from "@/components/editor/plugins/toolbar/block-insert/insert-table"
@@ -121,6 +123,7 @@ import { EMOJI } from "@/components/editor/transformers/markdown-emoji-transform
 import { EQUATION } from "@/components/editor/transformers/markdown-equation-transformer"
 import { HR } from "@/components/editor/transformers/markdown-hr-transformer"
 import { IMAGE } from "@/components/editor/transformers/markdown-image-transformer"
+import { VIDEO } from "@/components/editor/transformers/markdown-video-transformer"
 import { TABLE } from "@/components/editor/transformers/markdown-table-transformer"
 import { TWEET } from "@/components/editor/transformers/markdown-tweet-transformer"
 import { Separator } from "@/components/ui/separator"
@@ -181,6 +184,7 @@ export function Plugins({}) {
                   <InsertPageBreak />
                   <InsertImage />
                   <InsertInlineImage />
+                  <InsertVideo />
                   <InsertCollapsibleContainer />
                   <InsertExcalidraw />
                   <InsertTable />
@@ -201,7 +205,7 @@ export function Plugins({}) {
               <div className="" ref={onRef}>
                 <ContentEditable
                   placeholder={placeholder}
-                  className="ContentEditable__root relative block h-[830px] min-h-72 min-h-full overflow-auto px-8 py-4 focus:outline-none"
+                  className="ContentEditable__root relative block h-[830px] min-h-72 overflow-auto px-8 py-4 focus:outline-none"
                 />
               </div>
             </div>
@@ -225,6 +229,7 @@ export function Plugins({}) {
         <EmojisPlugin />
         <ImagesPlugin />
         <InlineImagePlugin />
+        <VideosPlugin />
         <ExcalidrawPlugin />
         <TableCellResizerPlugin />
         <TableHoverActionsPlugin anchorElem={floatingAnchorElem} />
@@ -250,6 +255,7 @@ export function Plugins({}) {
             TABLE,
             HR,
             IMAGE,
+            VIDEO,
             EMOJI,
             EQUATION,
             TWEET,
@@ -325,6 +331,7 @@ export function Plugins({}) {
                 TABLE,
                 HR,
                 IMAGE,
+                VIDEO,
                 EMOJI,
                 EQUATION,
                 TWEET,
