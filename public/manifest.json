@@ -1,0 +1,26 @@
+{
+  "name": "BlaccTheddiLiveUpdatesAndTv",
+  "short_name": "BlaccTheddi",
+  "description": "BlaccTheddiPost TV by Madeinblacc - Latest live updates and TV shows",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#000000",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "/favicon.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg"
+    },
+    {
+      "src": "/apple-icon.jpg",
+      "sizes": "180x180",
+      "type": "image/jpeg"
+    }
+  ]
+}
