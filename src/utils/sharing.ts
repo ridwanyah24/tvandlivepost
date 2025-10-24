@@ -78,24 +78,26 @@ export function openShareWindow(platform: string, url: string, title?: string) {
 /**
  * Generate post sharing data
  */
-export function generatePostShareData(postId: string, title: string, description?: string): ShareData {
+export function generatePostShareData(postId: string, title: string, description?: string, imageUrl?: string): ShareData {
   const baseUrl = getBaseUrl();
   return {
     url: `${baseUrl}/${postId}`,
     title,
     description,
+    image: imageUrl || '/blacctheddi.jpg', // Fallback to site logo
   };
 }
 
 /**
  * Generate video sharing data
  */
-export function generateVideoShareData(videoId: string, title: string, description?: string): ShareData {
+export function generateVideoShareData(videoId: string, title: string, description?: string, imageUrl?: string): ShareData {
   const baseUrl = getBaseUrl();
   return {
     url: `${baseUrl}/tv/${videoId}`,
     title,
     description,
+    image: imageUrl || '/blacctheddi.jpg', // Fallback to site logo
   };
 }
 

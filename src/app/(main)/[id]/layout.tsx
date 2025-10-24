@@ -9,7 +9,8 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   return generateBaseMetadata(
     "Post Update",
     "Read the latest update from BlaccTheddi. Stay informed with real-time news and updates.",
-    `/${id}`
+    `/${id}`,
+    '/blacctheddi.jpg' // Fallback to site logo
   );
 }
 

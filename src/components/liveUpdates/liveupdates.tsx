@@ -32,6 +32,7 @@ import { Input } from "../ui/input";
 import VideoCard from "../VideoCard";
 import DOMPurify from "dompurify";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { generatePostShareData, copyToClipboard, openShareWindow } from "@/utils/sharing";
 
 // ✅ HTML Cleaning Component
 export function CleanHTML({ html }: { html: string }) {
@@ -312,42 +313,50 @@ const LiveUpdates = () => {
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-48 flex flex-col space-y-2">
-                        <Button
-                          variant="ghost"
-                          className="justify-start text-sm"
-                          onClick={() =>
-                            window.open(
-                              `https://twitter.com/intent/tweet?url=${encodeURIComponent(window.location.href)}&text=${encodeURIComponent(selectedEvent?.title)}`,
-                              "_blank"
-                            )
-                          }
-                        >
-                          <TwitterIcon className="w-4 h-4 mr-2" /> Twitter
-                        </Button>
+                        {(() => {
+                          // Generate sharing data for this specific event
+                          const shareData = generatePostShareData(
+                            selectedEvent?.id || '',
+                            selectedEvent?.title || 'Check out this event from BlaccTheddi',
+                            selectedEvent?.details?.replace(/<[^>]*>/g, '').substring(0, 160),
+                            selectedEvent?.image_url
+                          );
+                          
+                          return (
+                            <>
+                              <Button
+                                variant="ghost"
+                                className="justify-start text-sm"
+                                onClick={() => openShareWindow('twitter', shareData.url, shareData.title)}
+                              >
+                                <TwitterIcon className="w-4 h-4 mr-2" /> Twitter
+                              </Button>
 
-                        <Button
-                          variant="ghost"
-                          className="justify-start text-sm"
-                          onClick={() =>
-                            window.open(
-                              `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(window.location.href)}`,
-                              "_blank"
-                            )
-                          }
-                        >
-                          <LinkedinIcon className="w-4 h-4 mr-2" /> LinkedIn
-                        </Button>
+                              <Button
+                                variant="ghost"
+                                className="justify-start text-sm"
+                                onClick={() => openShareWindow('linkedin', shareData.url)}
+                              >
+                                <LinkedinIcon className="w-4 h-4 mr-2" /> LinkedIn
+                              </Button>
 
-                        <Button
-                          variant="ghost"
-                          className="justify-start text-sm"
-                          onClick={() => {
-                            navigator.clipboard.writeText(window.location.href);
-                            toast({ description: "Link copied to clipboard!" });
-                          }}
-                        >
-                          <CopyIcon className="w-4 h-4 mr-2" /> Copy Link
-                        </Button>
+                              <Button
+                                variant="ghost"
+                                className="justify-start text-sm"
+                                onClick={async () => {
+                                  const success = await copyToClipboard(shareData.url);
+                                  if (success) {
+                                    toast({ description: "Link copied to clipboard!" });
+                                  } else {
+                                    toast({ description: "Failed to copy link", variant: "destructive" });
+                                  }
+                                }}
+                              >
+                                <CopyIcon className="w-4 h-4 mr-2" /> Copy Link
+                              </Button>
+                            </>
+                          );
+                        })()}
                       </PopoverContent>
                     </Popover>
                   </div>

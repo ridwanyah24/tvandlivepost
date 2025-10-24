@@ -9,7 +9,8 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   return generateBaseMetadata(
     "TV Show",
     "Watch this TV show from BlaccTheddi. Enjoy high-quality video content and entertainment.",
-    `/tv/${id}`
+    `/tv/${id}`,
+    '/blacctheddi.jpg' // Fallback to site logo
   );
 }
 

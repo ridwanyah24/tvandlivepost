@@ -2,6 +2,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { HeartIcon, MessageCircleIcon, ClockIcon, Share2Icon, LinkedinIcon, TwitterIcon, CopyIcon } from "lucide-react";
+import { generatePostShareData, copyToClipboard, openShareWindow } from "@/utils/sharing";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { timeSince } from "@/utils/formatDate";
@@ -181,52 +182,60 @@ const LiveUpdateCard = ({ update, onLike, onComment }: LiveUpdateCardProps) => {
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-48 flex flex-col space-y-2">
-              <Button
-                variant="ghost"
-                className="justify-start text-sm"
-                onClick={() =>
-                  window.open(
-                    `https://twitter.com/intent/tweet?url=${encodeURIComponent(window.location.href)}&text=${encodeURIComponent(update.title)}`,
-                    "_blank"
-                  )
-                }
-              >
-                <TwitterIcon className="w-4 h-4 mr-2" /> Twitter
-              </Button>
-              <Button
-                variant="ghost"
-                className="justify-start text-sm"
-                onClick={() =>
-                  window.open(
-                    `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(window.location.href)}`,
-                    "_blank"
-                  )
-                }
-              >
-                <LinkedinIcon className="w-4 h-4 mr-2" /> LinkedIn
-              </Button>
-              <Button
-                variant="ghost"
-                className="justify-start text-sm"
-                onClick={() =>
-                  window.open(
-                    `https://wa.me/?text=${encodeURIComponent(update.title + " " + window.location.href)}`,
-                    "_blank"
-                  )
-                }
-              >
-                <MessageCircleIcon className="w-4 h-4 mr-2" /> WhatsApp
-              </Button>
-              <Button
-                variant="ghost"
-                className="justify-start text-sm"
-                onClick={() => {
-                  navigator.clipboard.writeText(window.location.href)
-                  toast({ description: "Link copied to clipboard!" })
-                }}
-              >
-                <CopyIcon className="w-4 h-4 mr-2" /> Copy Link
-              </Button>
+              {(() => {
+                // Generate sharing data for this specific update
+                const shareData = generatePostShareData(
+                  update.id,
+                  update.title,
+                  update.details?.replace(/<[^>]*>/g, '').substring(0, 160),
+                  update.image_url
+                );
+                
+                return (
+                  <>
+                    <Button
+                      variant="ghost"
+                      className="justify-start text-sm"
+                      onClick={() => openShareWindow('twitter', shareData.url, shareData.title)}
+                    >
+                      <TwitterIcon className="w-4 h-4 mr-2" /> Twitter
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      className="justify-start text-sm"
+                      onClick={() => openShareWindow('linkedin', shareData.url)}
+                    >
+                      <LinkedinIcon className="w-4 h-4 mr-2" /> LinkedIn
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      className="justify-start text-sm"
+                      onClick={() => {
+                        window.open(
+                          `https://wa.me/?text=${encodeURIComponent(shareData.title + " " + shareData.url)}`,
+                          "_blank"
+                        )
+                      }}
+                    >
+                      <MessageCircleIcon className="w-4 h-4 mr-2" /> WhatsApp
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      className="justify-start text-sm"
+                      onClick={async () => {
+                        const success = await copyToClipboard(shareData.url);
+                        if (success) {
+                          toast({ description: "Link copied to clipboard!" });
+                        } else {
+                          toast({ description: "Failed to copy link", variant: "destructive" });
+                        }
+                      }}
+                    >
+                      <CopyIcon className="w-4 h-4 mr-2" /> Copy Link
+                    </Button>
+                  </>
+                );
+              })()}
             </PopoverContent>
           </Popover>
         </div>

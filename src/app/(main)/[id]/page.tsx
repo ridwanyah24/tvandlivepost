@@ -34,7 +34,8 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
   const shareData = generatePostShareData(
     id, 
     singleUpdate?.title || 'Check out this update from BlaccTheddi',
-    cleanHTMLToString(singleUpdate?.details)?.substring(0, 160)
+    cleanHTMLToString(singleUpdate?.details)?.substring(0, 160),
+    singleUpdate?.image_url
   );
   const maxLength = 200;
   const description = cleanHTMLToString(updateEvent?.details)

@@ -23,7 +23,8 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
     const shareData = generateVideoShareData(
         id,
         data?.video?.title || 'Check out this video from BlaccTheddi',
-        data?.video?.description?.substring(0, 160)
+        data?.video?.description?.substring(0, 160),
+        data?.video?.thumbnail_url
     );
     const [newComment, setNewComment] = useState("");
     const [postComment, { isLoading: loadC, isError: err }] = useGenericMutationMutation();
