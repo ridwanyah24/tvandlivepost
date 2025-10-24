@@ -50,6 +50,7 @@ export const editorTheme: EditorThemeClasses = {
   image: "relative inline-block user-select-none cursor-default editor-image",
   inlineImage:
     "relative inline-block user-select-none cursor-default inline-editor-image",
+  video: "relative inline-block user-select-none cursor-default editor-video",
   keyword: "text-purple-900 font-bold",
   code: "EditorTheme__code",
   codeHighlight: {

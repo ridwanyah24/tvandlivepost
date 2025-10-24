@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import VideoCard from "@/components/VideoCard";
 import { useGenericMutationMutation, useGetSingleVideoQuery, useGetVideoCommentsQuery } from "@/slice/requestSlice";
 import { timeSince } from "@/utils/formatDate";
-import { SendIcon, TrendingUpIcon, TvIcon, XIcon } from "lucide-react";
+import { SendIcon, TrendingUpIcon, TvIcon, XIcon, HeartIcon } from "lucide-react";
 import { use, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "@/hooks/use-toast";
@@ -144,6 +144,21 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
                                             <span>•</span>
                                             <span>{data?.video.comments.length} comments</span>
                                         </div>
+                                        
+                                        {/* Like Button */}
+                                        <div className="flex items-center">
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => handleLike(Number(id))}
+                                                className={`flex items-center space-x-2 ${isLiked ? "text-red-600" : "text-gray-500 hover:text-gray-800"
+                                                    }`}
+                                            >
+                                                <HeartIcon className={`w-4 h-4 ${isLiked ? "fill-current" : ""}`} />
+                                                <span>{data?.video.likes.length || 0}</span>
+                                            </Button>
+                                        </div>
+
                                         <div className="flex gap-2 items-center">
                                             <Input
                                                 placeholder="Write a comment..."

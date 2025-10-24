@@ -10,6 +10,7 @@ import { HashtagNode } from "@lexical/hashtag";
 import { InlineImageNode } from "@/components/editor/nodes/inline-image-node";
 import { PageBreakNode } from "@/components/editor/nodes/page-break-node";
 import { ImageNode } from "@/components/editor/nodes/image-node";
+import { VideoNode } from "@/components/editor/nodes/video-node";
 import { YouTubeNode } from "@/components/editor/nodes/embeds/youtube-node";
 import { FigmaNode } from "@/components/editor/nodes/embeds/figma-node";
 import { TweetNode } from "@/components/editor/nodes/embeds/tweet-node";
@@ -35,6 +36,7 @@ export function editorStateToHTML(editorStateJSON: any) {
       HorizontalRuleNode,
       InlineImageNode, // Add your custom node here,
       ImageNode, // Add your custom node here
+      VideoNode, // Add your custom node here
       PageBreakNode,
       YouTubeNode,
       TweetNode,

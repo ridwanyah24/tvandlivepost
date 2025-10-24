@@ -26,6 +26,7 @@ import { EquationNode } from "@/components/editor/nodes/equation-node"
 import { ExcalidrawNode } from "@/components/editor/nodes/excalidraw-node"
 import { ImageNode } from "@/components/editor/nodes/image-node"
 import { InlineImageNode } from "@/components/editor/nodes/inline-image-node"
+import { VideoNode } from "@/components/editor/nodes/video-node"
 import { KeywordNode } from "@/components/editor/nodes/keyword-node"
 import { LayoutContainerNode } from "@/components/editor/nodes/layout-container-node"
 import { LayoutItemNode } from "@/components/editor/nodes/layout-item-node"
@@ -54,6 +55,7 @@ export const nodes: ReadonlyArray<Klass<LexicalNode> | LexicalNodeReplacement> =
     PageBreakNode,
     ImageNode,
     InlineImageNode,
+    VideoNode,
     EmojiNode,
     KeywordNode,
     ExcalidrawNode,
