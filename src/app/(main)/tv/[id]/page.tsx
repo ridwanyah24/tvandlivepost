@@ -6,16 +6,25 @@ import { Input } from "@/components/ui/input";
 import VideoCard from "@/components/VideoCard";
 import { useGenericMutationMutation, useGetSingleVideoQuery, useGetVideoCommentsQuery } from "@/slice/requestSlice";
 import { timeSince } from "@/utils/formatDate";
-import { SendIcon, TrendingUpIcon, TvIcon, XIcon, HeartIcon } from "lucide-react";
+import { SendIcon, TrendingUpIcon, TvIcon, XIcon, HeartIcon, Share2Icon, MessageCircleIcon, TwitterIcon, LinkedinIcon, CopyIcon } from "lucide-react";
 import { use, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "@/hooks/use-toast";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { generateVideoShareData, copyToClipboard, openShareWindow } from "@/utils/sharing";
 
 
 export default function Page({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
     const { data } = useGetSingleVideoQuery({ id })
     const router = useRouter();
+    
+    // Generate sharing data for this video
+    const shareData = generateVideoShareData(
+        id,
+        data?.video?.title || 'Check out this video from BlaccTheddi',
+        data?.video?.description?.substring(0, 160)
+    );
     const [newComment, setNewComment] = useState("");
     const [postComment, { isLoading: loadC, isError: err }] = useGenericMutationMutation();
     const { data: updateComments } = useGetVideoCommentsQuery({ id })
@@ -145,8 +154,8 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
                                             <span>{data?.video.comments.length} comments</span>
                                         </div>
                                         
-                                        {/* Like Button */}
-                                        <div className="flex items-center">
+                                        {/* Like and Share Buttons */}
+                                        <div className="flex items-center space-x-4">
                                             <Button
                                                 variant="ghost"
                                                 size="sm"
@@ -157,6 +166,55 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
                                                 <HeartIcon className={`w-4 h-4 ${isLiked ? "fill-current" : ""}`} />
                                                 <span>{data?.video.likes.length || 0}</span>
                                             </Button>
+
+                                            <Button 
+                                                variant="ghost" 
+                                                size="sm" 
+                                                className="flex items-center text-gray-500 hover:text-gray-800"
+                                            >
+                                                <MessageCircleIcon className="w-4 h-4 mr-1" /> 
+                                                {updateComments?.length || 0}
+                                            </Button>
+
+                                            <Popover>
+                                                <PopoverTrigger asChild>
+                                                    <Button variant="ghost" size="sm" className="flex items-center text-gray-500 hover:text-gray-800">
+                                                        <Share2Icon className="w-4 h-4 mr-1" /> Share
+                                                    </Button>
+                                                </PopoverTrigger>
+                                                <PopoverContent className="w-48 flex flex-col space-y-2">
+                                                    <Button
+                                                        variant="ghost"
+                                                        className="justify-start text-sm"
+                                                        onClick={() => openShareWindow('twitter', shareData.url, shareData.title)}
+                                                    >
+                                                        <TwitterIcon className="w-4 h-4 mr-2" /> Twitter
+                                                    </Button>
+
+                                                    <Button
+                                                        variant="ghost"
+                                                        className="justify-start text-sm"
+                                                        onClick={() => openShareWindow('linkedin', shareData.url)}
+                                                    >
+                                                        <LinkedinIcon className="w-4 h-4 mr-2" /> LinkedIn
+                                                    </Button>
+
+                                                    <Button
+                                                        variant="ghost"
+                                                        className="justify-start text-sm"
+                                                        onClick={async () => {
+                                                            const success = await copyToClipboard(shareData.url);
+                                                            if (success) {
+                                                                toast({ description: "Link copied to clipboard!" });
+                                                            } else {
+                                                                toast({ description: "Failed to copy link", variant: "destructive" });
+                                                            }
+                                                        }}
+                                                    >
+                                                        <CopyIcon className="w-4 h-4 mr-2" /> Copy Link
+                                                    </Button>
+                                                </PopoverContent>
+                                            </Popover>
                                         </div>
 
                                         <div className="flex gap-2 items-center">
