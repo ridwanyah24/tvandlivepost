@@ -17,8 +17,15 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "BlaccTheddiLiveUpdatesAndTv",
-  description: "BlaccTheddiPost TV by Madeinblacc",
+  title: "Authentication",
+  description: "Login to access BlaccTheddi admin features.",
+  robots: {
+    index: false,
+    follow: false,
+    noarchive: true,
+    nosnippet: true,
+    noimageindex: true,
+  },
 };
 
 
