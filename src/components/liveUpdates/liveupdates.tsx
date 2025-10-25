@@ -281,11 +281,11 @@ const LiveUpdates = () => {
                         <div className="flex items-center space-x-1 sm:space-x-2">
                           <span className="text-gray-500 hidden sm:inline">·</span>
                           <span className="text-gray-500 text-xs sm:text-sm">{timeSince(selectedEvent.timestamp)}</span>
-                          <Badge className="bg-accent text-white text-xs animate-pulse">LIVE</Badge>
                         </div>
                       </div>
                       <p className="text-gray-600 text-xs sm:text-sm">@blacctheddi</p>
                     </div>
+                    <Badge className="bg-accent text-white text-xs animate-pulse">LIVE</Badge>
                   </div>
 
                   {/* Thread Content */}
