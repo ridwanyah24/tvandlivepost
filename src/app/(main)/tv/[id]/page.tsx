@@ -7,11 +7,12 @@ import VideoCard from "@/components/VideoCard";
 import { useGenericMutationMutation, useGetSingleVideoQuery, useGetVideoCommentsQuery } from "@/slice/requestSlice";
 import { timeSince } from "@/utils/formatDate";
 import { SendIcon, TrendingUpIcon, TvIcon, XIcon, HeartIcon, Share2Icon, MessageCircleIcon, TwitterIcon, LinkedinIcon, CopyIcon } from "lucide-react";
-import { use, useState } from "react";
+import { use, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "@/hooks/use-toast";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { generateVideoShareData, copyToClipboard, openShareWindow } from "@/utils/sharing";
+import { updateVideoMetadata } from "@/utils/metadata-updater";
 
 
 export default function Page({ params }: { params: Promise<{ id: string }> }) {
@@ -26,6 +27,18 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
         data?.video?.description?.substring(0, 160),
         data?.video?.thumbnail_url
     );
+
+    // Update page metadata dynamically
+    useEffect(() => {
+        if (data?.video) {
+            updateVideoMetadata({
+                id: data.video.id,
+                title: data.video.title,
+                description: data.video.description,
+                thumbnail_url: data.video.thumbnail_url,
+            });
+        }
+    }, [data?.video]);
     const [newComment, setNewComment] = useState("");
     const [postComment, { isLoading: loadC, isError: err }] = useGenericMutationMutation();
     const { data: updateComments } = useGetVideoCommentsQuery({ id })

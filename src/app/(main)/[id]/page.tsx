@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState, useMemo } from "react";
+import { use, useState, useMemo, useEffect } from "react";
 import Image from "next/image";
 import { format } from "date-fns";
 import { useGenericMutationMutation, useGetSingleEventQuery, useGetSingleUpdateQuery, useGetUpdateCommentsQuery } from "@/slice/requestSlice";
@@ -13,6 +13,7 @@ import { toast } from "@/components/ui/use-toast";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CleanHTML, cleanHTMLToString, } from "@/components/liveUpdates/liveupdates";
 import { generatePostShareData, copyToClipboard, openShareWindow } from "@/utils/sharing";
+import { updatePostMetadata } from "@/utils/metadata-updater";
 
 export default function Page({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -37,6 +38,18 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
     cleanHTMLToString(singleUpdate?.details)?.substring(0, 160),
     singleUpdate?.image_url
   );
+
+  // Update page metadata dynamically
+  useEffect(() => {
+    if (singleUpdate) {
+      updatePostMetadata({
+        id: singleUpdate.id,
+        title: singleUpdate.title,
+        details: singleUpdate.details,
+        image_url: singleUpdate.image_url,
+      });
+    }
+  }, [singleUpdate]);
   const maxLength = 200;
   const description = cleanHTMLToString(updateEvent?.details)
   const isTruncated = description?.length > maxLength;

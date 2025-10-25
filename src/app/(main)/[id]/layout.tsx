@@ -4,8 +4,9 @@ import { generateBaseMetadata } from "@/utils/metadata";
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
   
-  // In a real implementation, you would fetch the post data here
+  // TODO: In a real implementation, you would fetch the post data here
   // For now, we'll create a generic metadata structure
+  // The actual image will be handled by the client-side sharing utility
   return generateBaseMetadata(
     "Post Update",
     "Read the latest update from BlaccTheddi. Stay informed with real-time news and updates.",
