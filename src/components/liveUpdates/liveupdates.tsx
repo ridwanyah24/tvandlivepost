@@ -28,11 +28,10 @@ import { skipToken } from "@reduxjs/toolkit/query";
 import { useRouter } from "next/navigation";
 import { toast } from "@/hooks/use-toast";
 import { timeSince } from "@/utils/formatDate";
-import { Input } from "../ui/input";
-import VideoCard from "../VideoCard";
 import DOMPurify from "dompurify";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { generatePostShareData, copyToClipboard, openShareWindow } from "@/utils/sharing";
+import { Input } from "@/components/ui/input";
 
 // ✅ HTML Cleaning Component
 export function CleanHTML({ html }: { html: string }) {
@@ -59,10 +58,6 @@ const LiveUpdates = () => {
   const [loadedUpdates, setLoadedUpdates] = useState<any[]>([]);
   const [likeUpdate] = useGenericMutationMutation();
   const [likeVideo] = useGenericMutationMutation();
-  const [newComment, setNewComment] = useState("");
-  const [postComment] = useGenericMutationMutation();
-  const { data: eventComments } = useGetEventCommentsQuery({ id: selectedEvent?.id });
-  const { data } = useGetRecentVideosQuery();
 
   const [offset, setOffset] = useState(0);
   const limit = 2;
@@ -71,8 +66,14 @@ const LiveUpdates = () => {
   const [likeId, setLikeId] = useState<number | null>(null);
   const [isLiked, setIsLiked] = useState(false);
   const [isVideoLiked, setIsVideoLiked] = useState(false);
+  const [newComment, setNewComment] = useState("");
+  const [postComment] = useGenericMutationMutation();
+  const [showComments, setShowComments] = useState(false);
+  const [commentingOn, setCommentingOn] = useState<string | null>(null);
 
   const router = useRouter();
+  const { data: eventComments } = useGetEventCommentsQuery({ id: selectedEvent?.id });
+  const { data } = useGetRecentVideosQuery();
 
   const {
     data: mockUpdates,
@@ -144,28 +145,38 @@ const LiveUpdates = () => {
       });
   };
 
+
+  const handleLoadMore = () => {
+    if (loadedUpdates.length < maxUpdates) {
+      setOffset((prev) => prev + limit);
+    }
+  };
+
+
+  const handleComment = (updateId: string) => {
+    setCommentingOn(updateId);
+    setShowComments(!showComments);
+  };
+
   const handleAddComment = () => {
-    if (newComment.trim()) {
+    if (newComment.trim() && commentingOn) {
+      const url = commentingOn === 'event' 
+        ? `/events/${selectedEvent?.id}/comments`
+        : `/updates/${commentingOn}/comments`;
+      
       postComment({
-        url: `/events/${selectedEvent?.id}/comments`,
+        url,
         method: "POST",
         body: { content: newComment.trim() },
         invalidatesTags: [{ type: "singleEvent" }, { type: "event-updates" }],
       })
         .unwrap()
         .then((res) => {
-          const newCommentObj = {
-            id: res.id || Date.now(),
-            content: newComment.trim(),
-            timestamp: new Date().toISOString(),
-          };
-
-          setSelectedEvent((prev: any) => ({
-            ...prev,
-            comments: [...prev.comments, newCommentObj],
-          }));
-
           setNewComment("");
+          // toast({
+          //   title: "Success",
+          //   description: "Comment added successfully!",
+          // });
         })
         .catch((error) => {
           toast({
@@ -177,270 +188,530 @@ const LiveUpdates = () => {
     }
   };
 
-  const handlePlay = (videoId: string | number) => {
-    router.push(`/tv/${videoId}`);
-  };
-
-  const handleLoadMore = () => {
-    if (loadedUpdates.length < maxUpdates) {
-      setOffset((prev) => prev + limit);
-    }
-  };
-
-  const handleLikeVideo = (id: number) => {
-    if (!id) return;
-
-    const method = isVideoLiked ? "DELETE" : "POST";
-    const url = isVideoLiked ? `/likes/${likeId}` : `/tvs/${id}/likes`;
-
-    likeVideo({
-      url,
-      method,
-      invalidatesTags: [{ type: "all-videos" }],
+  const handleLikeUpdate = (updateId: string) => {
+    likeUpdate({
+      url: `/updates/${updateId}/likes`,
+      method: "POST",
+      invalidatesTags: [{ type: "event-updates" }],
     })
       .unwrap()
       .then((res) => {
-        if (!isVideoLiked && res?.id) {
-          setLikeId(res.id);
-        } else if (isVideoLiked) {
-          setLikeId(null);
-        }
-        setIsLiked(!isVideoLiked);
+        // toast({
+        //   title: "Success",
+        //   description: "Update liked!",
+        // });
       })
       .catch((error) => {
         toast({
           title: "Error",
-          description: error?.data?.message || "Failed to toggle like.",
+          description: error?.data?.message || "Failed to like update.",
           variant: "destructive",
         });
       });
   };
 
-  const handleComment = (updateId: string) => {
-    console.log("Open comments for update:", updateId);
-  };
-
   return (
-    <div className="min-h-screen bg-white text-gray-900">
-      <div className="container mx-auto px-4 py-8 space-y-10">
-        <h1 className="lg:text-3xl text-2xl font-bold tracking-tight mb-6">Live Post</h1>
+    <div className="min-h-screen bg-gray-50">
+      <div className="w-full mx-auto px-2 sm:px-4 py-4 sm:py-8 max-w-[1400px]">
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4 sm:mb-8 px-2 sm:px-0">Live Updates</h1>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-10">
-          {/* Main Content */}
-          <div className="lg:col-span-3 space-y-8">
-            {isLoading && <p>Loading Posts </p>}
-            {/* {!selectedEvent && <p>No Events to show</p>} */}
-            {selectedEvent && (
-              <article className="space-y-6">
-                <header className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-2xl font-semibold leading-snug">{selectedEvent.title}</h2>
-                    <Badge className="bg-accent text-white animate-pulse">LIVE</Badge>
-                  </div>
-
-                  <div className="flex items-center text-sm text-gray-500 space-x-4">
-                    <span className="flex items-center">
-                      <ClockIcon className="w-4 h-4 mr-1" /> {selectedEvent?.updates.length ?? 0} updates
-                    </span>
-                  </div>
-                </header>
-
-                {selectedEvent.image_url && (
-                  <div className="w-full overflow-hidden rounded-xl">
+        {isLoading && <p className="text-center text-gray-500">Loading Posts...</p>}
+        
+        {/* Mobile Event Switcher */}
+        <div className="lg:hidden mb-4">
+          <div className="bg-white rounded-xl p-4 shadow-sm">
+            <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center">
+              <RadioIcon className="w-4 h-4 mr-2 text-accent" />
+              Live Blogs
+            </h3>
+            <div className="flex gap-3 overflow-x-auto pb-2 border-none">
+              {mockEvents?.slice().reverse().map((event: any) => (
+                <div
+                  key={event.id}
+                  className={`cursor-pointer transition-all duration-200 hover:opacity-80 flex-shrink-0 ${
+                    selectedEvent?.id === event.id 
+                      ? "opacity-100 ring-opacity-50" 
+                      : "opacity-80"
+                  }`}
+                  onClick={() => setSelectedEvent(event)}
+                >
+                  <div className="relative w-32 h-20 overflow-hidden rounded-lg">
                     <img
-                      src={selectedEvent.image_url}
-                      alt={selectedEvent.title}
-                      className="w-full lg:h-[480px] h-[250px] object-cover object-center"
+                      src={event.image_url}
+                      alt={event.title}
+                      className="w-full h-full object-cover object-center"
                     />
+                    <Badge className="absolute top-1 left-1 bg-accent text-white animate-pulse text-xs">
+                      LIVE
+                    </Badge>
                   </div>
-                )}
+                  <div className="mt-2">
+                    <h4 className="font-medium text-gray-900 text-xs line-clamp-2">
+                      {event.title}
+                    </h4>
+                    <div className="flex items-center justify-between mt-1 text-xs text-gray-500">
+                      <span className="flex items-center">
+                        <MessageCircleIcon className="w-3 h-3 mr-1" />
+                        {event?.updates?.length || 0}
+                      </span>
+                      <span>{timeSince(event.timestamp)}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+        
+        <div className="flex gap-4 sm:gap-8">
+          {/* Main Content */}
+          <div className="flex-1">
+            {selectedEvent && (
+              <div className="space-y-3 sm:space-y-5">
+                {/* Main Thread (Event Post) */}
+                <div className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-6">
+                  {/* Thread Header */}
+                  <div className="flex items-start space-x-2 sm:space-x-3 mb-3 sm:mb-4">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-accent to-secondary rounded-full flex items-center justify-center flex-shrink-0">
+                      <RadioIcon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-2 mb-1">
+                        <h2 className="font-bold text-gray-900 text-sm sm:text-base">BlaccTheddi</h2>
+                        <div className="flex items-center space-x-1 sm:space-x-2">
+                          <span className="text-gray-500 hidden sm:inline">·</span>
+                          <span className="text-gray-500 text-xs sm:text-sm">{timeSince(selectedEvent.timestamp)}</span>
+                        </div>
+                      </div>
+                      <p className="text-gray-600 text-xs sm:text-sm">@blacctheddi</p>
+                    </div>
+                    <Badge className="bg-accent text-white text-xs animate-pulse">LIVE</Badge>
+                  </div>
 
-                <div className="prose max-w-none">
-                  <CleanHTML html={selectedEvent.details} />
+                  {/* Thread Content */}
+                  <div className="ml-0 sm:ml-15">
+                    <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2 sm:mb-3 leading-tight">
+                      {selectedEvent.title}
+                    </h3>
+
+                    {selectedEvent.image_url && (
+                      <div className="mb-3 sm:mb-4 rounded-lg sm:rounded-xl overflow-hidden">
+                        <img
+                          src={selectedEvent.image_url}
+                          alt={selectedEvent.title}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    )}
+
+                    <div className="prose prose-sm max-w-none text-gray-800 mb-3 sm:mb-4 text-sm sm:text-base">
+                      <CleanHTML html={selectedEvent.details} />
+                    </div>
+
+                    {/* Thread Stats */}
+                    <div className="flex items-center space-x-4 sm:space-x-6 text-gray-500 text-xs sm:text-sm mb-3 sm:mb-4">
+                      <span className="flex items-center">
+                        <MessageCircleIcon className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                        {selectedEvent?.updates.length ?? 0} updates
+                      </span>
+                      <span className="flex items-center">
+                        <HeartIcon className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                        {selectedEvent?.likes?.length || 0} likes
+                      </span>
+                    </div>
+
+                    {/* Thread Actions */}
+                    <div className="flex items-center space-x-4 sm:space-x-8 text-gray-500">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleLike}
+                        className={`flex items-center space-x-1 sm:space-x-2 text-xs sm:text-sm ${isLiked ? "text-red-600" : "text-gray-500 hover:text-gray-800"}`}
+                      >
+                        <HeartIcon className={`w-3 h-3 sm:w-4 sm:h-4 ${isLiked ? "fill-current" : ""}`} />
+                        <span className="hidden sm:inline">{selectedEvent?.likes?.length || 0}</span>
+                      </Button>
+
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="flex items-center text-gray-500 hover:text-gray-800 text-xs sm:text-sm"
+                        onClick={() => handleComment('event')}
+                      >
+                        <MessageCircleIcon className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                        <span className="hidden sm:inline">{selectedEvent?.comments?.length || 0}</span>
+                      </Button>
+
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button variant="ghost" size="sm" className="flex items-center text-gray-500 hover:text-gray-800 text-xs sm:text-sm">
+                            <Share2Icon className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                            <span className="hidden sm:inline">Share</span>
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-48 flex flex-col space-y-2">
+                          {(() => {
+                            const shareData = generatePostShareData(
+                              selectedEvent?.id || '',
+                              selectedEvent?.title || 'Check out this event from BlaccTheddi',
+                              selectedEvent?.details?.replace(/<[^>]*>/g, '').substring(0, 160),
+                              selectedEvent?.image_url
+                            );
+                            
+                            return (
+                              <>
+                                <Button
+                                  variant="ghost"
+                                  className="justify-start text-sm"
+                                  onClick={() => openShareWindow('twitter', shareData.url, shareData.title)}
+                                >
+                                  <TwitterIcon className="w-4 h-4 mr-2" /> Twitter
+                                </Button>
+
+                                <Button
+                                  variant="ghost"
+                                  className="justify-start text-sm"
+                                  onClick={() => openShareWindow('linkedin', shareData.url)}
+                                >
+                                  <LinkedinIcon className="w-4 h-4 mr-2" /> LinkedIn
+                                </Button>
+
+                                <Button
+                                  variant="ghost"
+                                  className="justify-start text-sm"
+                                  onClick={async () => {
+                                    const success = await copyToClipboard(shareData.url);
+                                    if (success) {
+                                      toast({ description: "Link copied to clipboard!" });
+                                    } else {
+                                      toast({ description: "Failed to copy link", variant: "destructive" });
+                                    }
+                                  }}
+                                >
+                                  <CopyIcon className="w-4 h-4 mr-2" /> Copy Link
+                                </Button>
+                              </>
+                            );
+                          })()}
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                  </div>
+
+                  {/* Comments Section for Main Thread */}
+                  {showComments && commentingOn === 'event' && (
+                    <div className="mt-4 sm:mt-6 border-t border-gray-200 pt-4 sm:pt-6">
+                      <h4 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Comments</h4>
+                      
+                      {/* Add Comment Form */}
+                      <div className="flex gap-2 items-center mb-3 sm:mb-4">
+                        <Input
+                          placeholder="Write a comment..."
+                          value={newComment}
+                          onChange={(e) => setNewComment(e.target.value)}
+                          className="flex-1 text-sm"
+                        />
+                        <Button 
+                          size="sm" 
+                          className="bg-accent hover:bg-red-700 text-xs" 
+                          onClick={handleAddComment}
+                          disabled={!newComment.trim()}
+                        >
+                          <SendIcon className="w-3 h-3 sm:w-4 sm:h-4" />
+                        </Button>
+                      </div>
+
+                      {/* Comments List */}
+                      <div className="space-y-2 sm:space-y-3 max-h-48 sm:max-h-64 overflow-y-auto">
+                        {eventComments?.slice().reverse().map((comment: any) => (
+                          <div key={comment.id} className="p-2 sm:p-3 rounded-lg bg-gray-50">
+                            <p className="text-xs sm:text-sm text-gray-800">{comment.content}</p>
+                            <span className="text-xs text-gray-500">{timeSince(comment.timestamp)}</span>
+                          </div>
+                        ))}
+                        {(!eventComments || eventComments.length === 0) && (
+                          <p className="text-xs sm:text-sm text-gray-500 text-center py-3 sm:py-4">No comments yet. Be the first to comment!</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
-                {/* Updates integrated below */}
+                {/* Thread Replies (Updates) */}
                 {loadedUpdates?.length > 0 && (
-                  <section className="space-y-8 mt-10">
-                    {/* <h3 className="text-xl font-semibold border-l-4 border-red-600 pl-3">
-                      Live Updates
-                    </h3> */}
-                    {loadedUpdates.map((update: any) => (
-                      <LiveUpdateCard
-                        key={update.id}
-                        update={update}
-                        onLike={handleLike}
-                        onComment={handleComment}
-                      />
+                  <div className="space-y-0">
+                    {loadedUpdates.map((update: any, index: number) => (
+                      <div key={update.id} className="relative">
+                        {/* Thread Line */}
+                        <div className="absolute left-3 sm:left-6 top-0 bottom-0 w-0.5 bg-gray-200"></div>
+                        
+                        {/* Reply Card */}
+                        <div className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-6 ml-6 sm:ml-12">
+                          <div className="flex items-start space-x-2 sm:space-x-3 mb-3 sm:mb-4">
+                            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center flex-shrink-0">
+                              <MessageCircleIcon className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-2 mb-1">
+                                <h4 className="font-semibold text-gray-900 text-sm sm:text-base">BlaccTheddi</h4>
+                                <div className="flex items-center space-x-1 sm:space-x-2">
+                                  <span className="text-gray-500 hidden sm:inline">·</span>
+                                  <span className="text-gray-500 text-xs sm:text-sm">{timeSince(update.timestamp)}</span>
+                                </div>
+                              </div>
+                              <p className="text-gray-600 text-xs sm:text-sm">@blacctheddi</p>
+                            </div>
+                          </div>
+
+                          <div className="ml-0 sm:ml-13">
+                            <h5 className="font-medium text-gray-900 mb-2 text-sm sm:text-base">{update.title}</h5>
+
+                            {update.image_url && (
+                              <div className="mb-3 rounded-lg sm:rounded-xl overflow-hidden">
+                                <img
+                                  src={update.image_url}
+                                  alt={update.title}
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                            )}
+
+                            <div className="prose prose-sm max-w-none text-gray-800 mb-3 text-xs sm:text-sm">
+                              <CleanHTML html={update.details} />
+                            </div>
+
+                            {/* Reply Actions */}
+                            <div className="flex items-center space-x-4 sm:space-x-6 text-gray-500 text-xs sm:text-sm">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="flex items-center space-x-1 sm:space-x-2 text-gray-500 hover:text-gray-800"
+                                onClick={() => handleLikeUpdate(update.id)}
+                              >
+                                <HeartIcon className="w-3 h-3 sm:w-4 sm:h-4" />
+                                <span className="hidden sm:inline">{update.likes?.length || 0}</span>
+                              </Button>
+
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="flex items-center text-gray-500 hover:text-gray-800"
+                                onClick={() => handleComment(update.id)}
+                              >
+                                <MessageCircleIcon className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                                <span className="hidden sm:inline">{update.comments?.length || 0}</span>
+                              </Button>
+
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <Button variant="ghost" size="sm" className="flex items-center text-gray-500 hover:text-gray-800 text-xs sm:text-sm">
+                                    <Share2Icon className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                                    <span className="hidden sm:inline">Share</span>
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-48 flex flex-col space-y-2">
+                                  {(() => {
+                                    const shareData = generatePostShareData(
+                                      update.id,
+                                      update.title,
+                                      update.details?.replace(/<[^>]*>/g, '').substring(0, 160),
+                                      update.image_url
+                                    );
+                                    
+                                    return (
+                                      <>
+                                        <Button
+                                          variant="ghost"
+                                          className="justify-start text-sm"
+                                          onClick={() => openShareWindow('twitter', shareData.url, shareData.title)}
+                                        >
+                                          <TwitterIcon className="w-4 h-4 mr-2" /> Twitter
+                                        </Button>
+
+                                        <Button
+                                          variant="ghost"
+                                          className="justify-start text-sm"
+                                          onClick={() => openShareWindow('linkedin', shareData.url)}
+                                        >
+                                          <LinkedinIcon className="w-4 h-4 mr-2" /> LinkedIn
+                                        </Button>
+
+                                        <Button
+                                          variant="ghost"
+                                          className="justify-start text-sm"
+                                          onClick={async () => {
+                                            const success = await copyToClipboard(shareData.url);
+                                            if (success) {
+                                              toast({ description: "Link copied to clipboard!" });
+                                            } else {
+                                              toast({ description: "Failed to copy link", variant: "destructive" });
+                                            }
+                                          }}
+                                        >
+                                          <CopyIcon className="w-4 h-4 mr-2" /> Copy Link
+                                        </Button>
+                                      </>
+                                    );
+                                  })()}
+                                </PopoverContent>
+                              </Popover>
+                            </div>
+                          </div>
+
+                          {/* Comments Section for Update */}
+                          {showComments && commentingOn === update.id && (
+                            <div className="mt-3 sm:mt-4 border-t border-gray-200 pt-3 sm:pt-4">
+                              <h5 className="text-xs sm:text-sm font-semibold text-gray-900 mb-2 sm:mb-3">Comments</h5>
+                              
+                              {/* Add Comment Form */}
+                              <div className="flex gap-1 sm:gap-2 items-center mb-2 sm:mb-3">
+                                <Input
+                                  placeholder="Write a comment..."
+                                  value={newComment}
+                                  onChange={(e) => setNewComment(e.target.value)}
+                                  className="flex-1 text-xs sm:text-sm"
+                                />
+                                <Button 
+                                  size="sm" 
+                                  className="bg-accent hover:bg-red-700 text-xs px-2 sm:px-3" 
+                                  onClick={handleAddComment}
+                                  disabled={!newComment.trim()}
+                                >
+                                  <SendIcon className="w-3 h-3" />
+                                </Button>
+                              </div>
+
+                              {/* Comments List */}
+                              <div className="space-y-1 sm:space-y-2 max-h-32 sm:max-h-48 overflow-y-auto">
+                                {update.comments?.slice().reverse().map((comment: any) => (
+                                  <div key={comment.id} className="p-2 rounded bg-gray-50">
+                                    <p className="text-xs text-gray-800">{comment.content}</p>
+                                    <span className="text-xs text-gray-500">{timeSince(comment.timestamp)}</span>
+                                  </div>
+                                ))}
+                                {(!update.comments || update.comments.length === 0) && (
+                                  <p className="text-xs text-gray-500 text-center py-2">No comments yet.</p>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     ))}
+
+                    {/* Load More Button */}
                     {loadedUpdates.length < maxUpdates && (
-                      <div className="text-center mt-8">
+                      <div className="text-center mt-4 sm:mt-6 cursor-pointer">
                         <Button
                           onClick={handleLoadMore}
                           variant="outline"
-                          className="text-red-600 hover:bg-red-600 hover:text-white"
+                          className="text-gray-600 cursor-pointer text-xs sm:text-sm px-4 sm:px-6"
                           disabled={loading}
                         >
-                          {loading ? "Loading..." : "Load More Updates"}
+                          {loading ? "Loading..." : "Show more updates"}
                         </Button>
                       </div>
                     )}
-                  </section>
+                  </div>
                 )}
-
-                {/* Interaction Section */}
-                <section className="border-t border-gray-200 pt-6 space-y-4">
-                  <div className="flex items-center space-x-4">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleLike}
-                      className={`flex items-center space-x-2 ${isLiked ? "text-red-600" : "text-gray-500 hover:text-gray-800"
-                        }`}
-                    >
-                      <HeartIcon className={`w-4 h-4 ${isLiked ? "fill-current" : ""}`} />
-                      <span>{selectedEvent?.likes.length}</span>
-                    </Button>
-
-                    <Button variant="ghost" size="sm" className="flex items-center text-gray-500 hover:text-gray-800">
-                      <MessageCircleIcon className="w-4 h-4 mr-1" /> {selectedEvent?.comments.length}
-                    </Button>
-
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button variant="ghost" size="sm" className="flex items-center text-gray-500 hover:text-gray-800">
-                          <Share2Icon className="w-4 h-4 mr-1" /> Share
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-48 flex flex-col space-y-2">
-                        {(() => {
-                          // Generate sharing data for this specific event
-                          const shareData = generatePostShareData(
-                            selectedEvent?.id || '',
-                            selectedEvent?.title || 'Check out this event from BlaccTheddi',
-                            selectedEvent?.details?.replace(/<[^>]*>/g, '').substring(0, 160),
-                            selectedEvent?.image_url
-                          );
-                          
-                          return (
-                            <>
-                              <Button
-                                variant="ghost"
-                                className="justify-start text-sm"
-                                onClick={() => openShareWindow('twitter', shareData.url, shareData.title)}
-                              >
-                                <TwitterIcon className="w-4 h-4 mr-2" /> Twitter
-                              </Button>
-
-                              <Button
-                                variant="ghost"
-                                className="justify-start text-sm"
-                                onClick={() => openShareWindow('linkedin', shareData.url)}
-                              >
-                                <LinkedinIcon className="w-4 h-4 mr-2" /> LinkedIn
-                              </Button>
-
-                              <Button
-                                variant="ghost"
-                                className="justify-start text-sm"
-                                onClick={async () => {
-                                  const success = await copyToClipboard(shareData.url);
-                                  if (success) {
-                                    toast({ description: "Link copied to clipboard!" });
-                                  } else {
-                                    toast({ description: "Failed to copy link", variant: "destructive" });
-                                  }
-                                }}
-                              >
-                                <CopyIcon className="w-4 h-4 mr-2" /> Copy Link
-                              </Button>
-                            </>
-                          );
-                        })()}
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-
-                  {/* Comments */}
-                  <div className="pt-4 space-y-3">
-                    <div className="flex gap-2 items-center">
-                      <Input
-                        placeholder="Write a comment..."
-                        value={newComment}
-                        onChange={(e) => setNewComment(e.target.value)}
-                      />
-                      <Button size="sm" className="bg-accent hover:bg-red-700" onClick={handleAddComment}>
-                        <SendIcon />
-                      </Button>
-                    </div>
-
-                    <div className="space-y-3 max-h-[400px] overflow-auto">
-                      {eventComments?.slice().reverse().map((comment: any) => (
-                        <div key={comment.id} className="p-3 rounded-lg bg-gray-50">
-                          <p className="text-sm text-gray-800">{comment.content}</p>
-                          <span className="text-xs text-gray-500">{timeSince(comment.timestamp)}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </section>
-              </article>
+              </div>
             )}
           </div>
 
           {/* Sidebar */}
-          <aside className="lg:col-span-1 space-y-8">
-            <section>
-              <h2 className="text-xl font-semibold mb-4 flex items-center">
-                <RadioIcon className="w-5 h-5 mr-2 text-red-600" /> Recent Live Blogs
-              </h2>
-
-              <div className="space-y-5">
-                {mockEvents
-                  ?.slice()
-                  .reverse()
-                  .map((event: any) => (
+          <div className="w-64 sm:w-80 flex-shrink-0 hidden lg:block">
+            <div className="sticky top-8 space-y-6">
+              {/* Events Sidebar */}
+              <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-sm">
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                  <RadioIcon className="w-4 h-4 sm:w-5 sm:h-5 mr-2 text-accent" />
+                  Live Events
+                </h3>
+                
+                <div className="space-y-4">
+                  {mockEvents?.slice().reverse().map((event: any) => (
                     <div
                       key={event.id}
-                      className={`cursor-pointer transition-all duration-200 hover:opacity-80 ${selectedEvent?.id === event.id ? "opacity-100" : "opacity-80"
-                        }`}
+                      className={`cursor-pointer transition-all duration-200 hover:opacity-80 ${
+                        selectedEvent?.id === event.id 
+                          // ? "opacity-100 ring-2 ring-accent ring-opacity-50" 
+                          // : "opacity-80"
+                      }`}
                       onClick={() => setSelectedEvent(event)}
                     >
                       <div className="relative w-full overflow-hidden rounded-lg">
                         <img
                           src={event.image_url}
                           alt={event.title}
-                          className="w-full h-[180px] object-cover object-center"
+                          className="w-full h-32 object-cover object-center"
                         />
-                        <Badge className="absolute top-2 left-2 bg-accent text-white animate-pulse">
+                        <Badge className="absolute top-2 left-2 bg-accent text-white animate-pulse text-xs">
                           LIVE
                         </Badge>
                       </div>
-                      <h3 className="mt-2 font-medium text-gray-800 text-sm">{event.title}</h3>
+                      <div className="mt-3">
+                        <h4 className="font-medium text-gray-900 text-sm line-clamp-2">
+                          {event.title}
+                        </h4>
+                        <div className="flex items-center justify-between mt-2 text-xs text-gray-500">
+                          <span className="flex items-center">
+                            <MessageCircleIcon className="w-3 h-3 mr-1" />
+                            {event?.updates?.length || 0} updates
+                          </span>
+                          <span>{timeSince(event.timestamp)}</span>
+                        </div>
+                      </div>
                     </div>
                   ))}
+                </div>
               </div>
-            </section>
 
-            <section>
-              <h3 className="text-xl font-semibold mb-4 flex items-center">
-                <TrendingUpIcon className="w-5 h-5 mr-2 text-red-600" /> Related Videos
-              </h3>
-
-              <div className="space-y-4">
-                {data?.map((video: any) => (
-                  <VideoCard
-                    key={video.id}
-                    video={video}
-                    onPlay={handlePlay}
-                    onLike={handleLikeVideo}
-                    size="large"
-                  />
-                ))}
+              {/* Related Videos Sidebar */}
+              <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-sm">
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                  <TrendingUpIcon className="w-4 h-4 sm:w-5 sm:h-5 mr-2 text-accent" />
+                  Related Videos
+                </h3>
+                
+                <div className="space-y-4">
+                  {data?.slice(0, 3).map((video: any) => (
+                    <div
+                      key={video.id}
+                      className="cursor-pointer transition-all duration-200 hover:opacity-80"
+                      onClick={() => router.push(`/tv/${video.id}`)}
+                    >
+                      <div className="relative w-full overflow-hidden rounded-lg">
+                        <img
+                          src={video.thumbnail_url}
+                          alt={video.title}
+                          className="w-full h-24 object-cover object-center"
+                        />
+                        <div className="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center">
+                          <div className="w-8 h-8 bg-white bg-opacity-90 rounded-full flex items-center justify-center">
+                            <svg className="w-4 h-4 text-gray-800" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M8 5v14l11-7z"/>
+                            </svg>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="mt-2">
+                        <h4 className="font-medium text-gray-900 text-sm line-clamp-2">
+                          {video.title}
+                        </h4>
+                        <div className="flex items-center justify-between mt-1 text-xs text-gray-500">
+                          <span className="flex items-center">
+                            <HeartIcon className="w-3 h-3 mr-1" />
+                            {video.likes?.length || 0}
+                          </span>
+                          <span>{timeSince(video.timestamp)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </section>
-          </aside>
-
+            </div>
+          </div>
         </div>
       </div>
     </div>
