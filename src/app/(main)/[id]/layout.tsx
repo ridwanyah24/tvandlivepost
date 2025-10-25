@@ -4,14 +4,32 @@ import { generateBaseMetadata } from "@/utils/metadata";
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
   
-  // TODO: In a real implementation, you would fetch the post data here
-  // For now, we'll create a generic metadata structure
-  // The actual image will be handled by the client-side sharing utility
+  try {
+    // Fetch the actual post data server-side
+    const response = await fetch(`https://api.madeinblacc.net/updates/${id}`, {
+      cache: 'no-store' // Ensure fresh data
+    });
+    
+    if (response.ok) {
+      const post = await response.json();
+      
+      return generateBaseMetadata(
+        post.title || "Post Update",
+        post.details?.replace(/<[^>]*>/g, '').substring(0, 160) || "Read the latest update from BlaccTheddi. Stay informed with real-time news and updates.",
+        `/${id}`,
+        post.image_url || '/blacctheddi.jpg'
+      );
+    }
+  } catch (error) {
+    console.error('Failed to fetch post data for metadata:', error);
+  }
+  
+  // Fallback to generic metadata
   return generateBaseMetadata(
     "Post Update",
     "Read the latest update from BlaccTheddi. Stay informed with real-time news and updates.",
     `/${id}`,
-    '/blacctheddi.jpg' // Fallback to site logo
+    '/blacctheddi.jpg'
   );
 }
 
