@@ -329,7 +329,7 @@ const LiveUpdates = () => {
                         className={`flex items-center space-x-1 sm:space-x-2 text-xs sm:text-sm ${isLiked ? "text-red-600" : "text-gray-500 hover:text-gray-800"}`}
                       >
                         <HeartIcon className={`w-3 h-3 sm:w-4 sm:h-4 ${isLiked ? "fill-current" : ""}`} />
-                        <span className="hidden sm:inline">{selectedEvent?.likes?.length || 0}</span>
+                        <span>{selectedEvent?.likes?.length || 0}</span>
                       </Button>
 
                       <Button 
@@ -339,7 +339,7 @@ const LiveUpdates = () => {
                         onClick={() => handleComment('event')}
                       >
                         <MessageCircleIcon className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
-                        <span className="hidden sm:inline">{selectedEvent?.comments?.length || 0}</span>
+                        <span>{selectedEvent?.comments?.length || 0}</span>
                       </Button>
 
                       <Popover>
@@ -489,7 +489,7 @@ const LiveUpdates = () => {
                                 onClick={() => handleLikeUpdate(update.id)}
                               >
                                 <HeartIcon className="w-3 h-3 sm:w-4 sm:h-4" />
-                                <span className="hidden sm:inline">{update.likes?.length || 0}</span>
+                                <span>{update.likes?.length || 0}</span>
                               </Button>
 
                               <Button 
@@ -499,7 +499,7 @@ const LiveUpdates = () => {
                                 onClick={() => handleComment(update.id)}
                               >
                                 <MessageCircleIcon className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
-                                <span className="hidden sm:inline">{update.comments?.length || 0}</span>
+                                <span>{update.comments?.length || 0}</span>
                               </Button>
 
                               <Popover>
